@@ -1,0 +1,29 @@
+# Additional Test Dependencies
+# These are extra dependencies that might be needed for specific test scenarios
+
+# Code quality and linting
+flake8==6.1.0
+black==23.12.1
+isort==5.13.2
+
+# Additional testing utilities
+pytest-mock==3.12.0
+pytest-cov==4.1.0
+pytest-timeout==2.2.0
+pytest-rerunfailures==12.0
+
+# Performance testing
+pytest-benchmark==4.0.0
+
+# Test data generation
+faker==21.0.0
+
+# API testing (if needed)
+httpx==0.25.2
+
+# Database testing (if needed)
+# sqlalchemy==2.0.23
+# pytest-postgresql==5.0.0
+
+# Note: Main dependencies are in requirements.txt
+# This file contains optional/additional testing dependencies
