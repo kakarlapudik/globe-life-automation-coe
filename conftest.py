@@ -9,19 +9,32 @@ from typing import Generator
 
 @pytest.fixture(scope="session")
 def browser_type_launch_args(browser_type_launch_args):
-    """Configure browser launch to use existing Chromium installation"""
+    """Configure browser launch to use Selenium Grid or local Chromium"""
     import os
     
-    # Use existing Chromium from ms-playwright directory
-    chromium_path = os.path.expanduser(
-        r"~\AppData\Local\ms-playwright\chromium-1155\chrome-win\chrome.exe"
-    )
+    # Check if Selenium Grid should be used
+    use_selenium_grid = os.environ.get("USE_SELENIUM_GRID", "false").lower() == "true"
+    selenium_hub_url = os.environ.get("SELENIUM_HUB_URL", "http://192.168.1.33:4444")
     
-    return {
-        **browser_type_launch_args,
-        "executable_path": chromium_path if os.path.exists(chromium_path) else None,
-        "headless": False
-    }
+    if use_selenium_grid:
+        # Configure for Selenium Grid
+        return {
+            **browser_type_launch_args,
+            "headless": False,
+            # Note: Playwright doesn't directly support Selenium Grid
+            # This would require additional configuration or using selenium-wire
+        }
+    else:
+        # Use existing Chromium from ms-playwright directory
+        chromium_path = os.path.expanduser(
+            r"~\AppData\Local\ms-playwright\chromium-1155\chrome-win\chrome.exe"
+        )
+        
+        return {
+            **browser_type_launch_args,
+            "executable_path": chromium_path if os.path.exists(chromium_path) else None,
+            "headless": False
+        }
 
 
 @pytest.fixture(scope="session")

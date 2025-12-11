@@ -56,4 +56,11 @@ jobs:
       if: always()
       with:
         name: pytest-results
-        path: generated_tests/pytest-results.xml
+        path: reports/junit.xml
+    
+    - name: Trigger Selenium Grid Tests
+      if: success()
+      run: |
+        echo "✅ Local tests completed successfully"
+        echo "🚀 Selenium Grid tests will be triggered automatically via workflow_run event"
+        echo "🌐 Grid Hub: http://192.168.1.33:4444"
