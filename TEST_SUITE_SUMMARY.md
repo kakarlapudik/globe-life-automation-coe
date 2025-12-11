@@ -32,7 +32,7 @@ python generated_tests/run_tests.py all
 # Run quick homepage test
 python generated_tests/run_tests.py quick
 
-# Run with pytest directly
+# Run with pytest directly (parallel execution by default)
 pytest generated_tests/ -v --html=report.html
 ```
 
@@ -96,7 +96,7 @@ pytest generated_tests/ -v --html=report.html
 - Adjustable timeouts
 - Configurable crawl depth
 - Browser viewport settings
-- Parallel execution support
+- Parallel execution by default (auto-scaling to CPU cores)
 
 ## 📈 Expected Results
 
@@ -110,7 +110,7 @@ pytest generated_tests/ -v --html=report.html
 
 ## 🔧 Configuration Options
 
-### Run Specific Tests
+### Run Specific Tests (parallel execution by default)
 ```bash
 pytest generated_tests/test_homepage_links.py -v
 pytest generated_tests/test_navigation_menu.py -v
@@ -121,10 +121,16 @@ pytest generated_tests/test_navigation_menu.py -v
 pytest generated_tests/ --headed
 ```
 
-### Run with Parallel Execution
+### Parallel Execution (Default Behavior)
 ```bash
-pip install pytest-xdist
+# Parallel execution is enabled by default using all CPU cores
+pytest generated_tests/
+
+# Override to use specific number of workers
 pytest generated_tests/ -n 4
+
+# Disable parallel execution (run sequentially)
+pytest generated_tests/ -n 0
 ```
 
 ### Generate HTML Report

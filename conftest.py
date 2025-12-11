@@ -79,6 +79,13 @@ def pytest_configure(config):
     os.makedirs("logs", exist_ok=True)
     os.makedirs("screenshots", exist_ok=True)
     os.makedirs("test_videos", exist_ok=True)
+    
+    # Configure for parallel execution
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER")
+    if worker_id:
+        # Create worker-specific directories to avoid conflicts
+        os.makedirs(f"screenshots/{worker_id}", exist_ok=True)
+        os.makedirs(f"test_videos/{worker_id}", exist_ok=True)
 
 
 def pytest_html_report_title(report):
@@ -96,7 +103,13 @@ def pytest_runtest_makereport(item, call):
         # Get the page fixture if available
         if "page" in item.funcargs:
             page = item.funcargs["page"]
-            screenshot_path = f"screenshots/{item.name}_failure.png"
+            
+            # Use worker-specific directory for parallel execution
+            import os
+            worker_id = os.environ.get("PYTEST_XDIST_WORKER", "main")
+            screenshot_dir = f"screenshots/{worker_id}" if worker_id != "main" else "screenshots"
+            screenshot_path = f"{screenshot_dir}/{item.name}_failure.png"
+            
             page.screenshot(path=screenshot_path)
             
             # Attach to HTML report

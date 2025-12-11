@@ -250,14 +250,15 @@ class TestCaseGenerator:
 class PlaywrightScriptGenerator:
     """Generates Playwright Python automation scripts"""
     
-    def __init__(self, test_cases: List[TestCase]):
+    def __init__(self, test_cases: List[TestCase], base_url: str = "https://your-application-url.com"):
         self.test_cases = test_cases
+        self.base_url = base_url
         self.scripts = []
     
     def generate(self) -> List[AutomationScript]:
         """Generate Playwright scripts for automatable test cases"""
         for tc in self.test_cases:
-            if tc.automation_priority in [AutomationPriority.HIGH.value, AutomationPriority.MEDIUM.value]:
+            if tc.automation_priority in [AutomationPriority.HIGH.value, AutomationPriority.MEDIUM.value, AutomationPriority.LOW.value]:
                 script = self._create_playwright_script(tc)
                 self.scripts.append(script)
         
@@ -267,7 +268,7 @@ class PlaywrightScriptGenerator:
         """Create Playwright Python script for a test case"""
         script_name = f"test_{test_case.id.lower()}.py"
         
-        # Generate script content
+        # Generate comprehensive link validation script
         script_content = f'''"""
 Test Case: {test_case.title}
 Test ID: {test_case.id}
@@ -276,6 +277,10 @@ Automation Priority: {test_case.automation_priority}
 """
 
 import pytest
+import requests
+import json
+import os
+from urllib.parse import urljoin, urlparse
 from playwright.sync_api import Page, expect
 
 
@@ -288,29 +293,136 @@ class Test{test_case.id}:
     def setup(self, page: Page):
         """Setup before each test"""
         self.page = page
-        # Add your base URL configuration
-        self.base_url = "https://your-application-url.com"
+        self.base_url = "{self.base_url}"
+        self.all_links = []
+        self.broken_links = []
+        self.valid_links = []
+        
+        # Create reports directory
+        os.makedirs("reports", exist_ok=True)
     
     def test_{test_case.id.lower()}_positive_flow(self):
         """
         Test: {test_case.title}
-        Expected: {test_case.expected_result}
+        Expected: Comprehensive link validation with detailed reporting
         """
         page = self.page
         
         # Navigate to application
         page.goto(self.base_url)
         
-'''
+        # Wait for page to load completely
+        page.wait_for_load_state("networkidle")
         
-        # Generate test steps
-        for step in test_case.test_steps:
-            script_content += self._generate_step_code(step)
+        # Extract all links from the page
+        print(f"\\n[EXTRACT] Extracting links from {{self.base_url}}")
+        links = page.locator("a[href]").all()
         
-        script_content += '''
-        # Verify final result
-        # TODO: Add specific assertions based on expected results
+        for link in links:
+            try:
+                href = link.get_attribute("href")
+                text = link.inner_text().strip()[:50]  # Limit text length
+                
+                if href:
+                    # Convert relative URLs to absolute
+                    full_url = urljoin(self.base_url, href)
+                    
+                    # Skip non-HTTP links
+                    if not full_url.startswith(('http://', 'https://')):
+                        continue
+                    
+                    self.all_links.append({{
+                        'url': full_url,
+                        'text': text,
+                        'original_href': href
+                    }})
+            except Exception as e:
+                print(f"[WARN] Error extracting link: {{e}}")
         
+        print(f"[INFO] Found {{len(self.all_links)}} links to validate")
+        
+        # Validate each link
+        self._validate_links()
+        
+        # Generate summary report
+        self._generate_report()
+        
+        # Print results summary
+        print(f"\\n{'='*60}")
+        print(f"Total Links Validated: {{len(self.all_links)}}")
+        print(f"Broken Links: {{len(self.broken_links)}}")
+        print(f"{'='*60}")
+        
+        if self.broken_links:
+            print(f"\\n[ERROR] BROKEN LINKS FOUND:")
+            for link in self.broken_links:
+                print(f"  - {{link['url']}} (Status: {{link['status']}})")
+        
+        # Assert acceptable results (allow 403 status codes as they may be intentional)
+        critical_broken_links = [link for link in self.broken_links 
+                               if link['status'] not in [403]]
+        
+        assert len(critical_broken_links) == 0, f"Found {{len(critical_broken_links)}} critical broken links"
+    
+    def _validate_links(self):
+        """Validate all extracted links"""
+        session = requests.Session()
+        session.verify = False  # Disable SSL verification for corporate environments
+        
+        for link_data in self.all_links:
+            url = link_data['url']
+            try:
+                # Use HEAD request for faster validation
+                response = session.head(url, timeout=30, allow_redirects=True)
+                status_code = response.status_code
+                
+                link_result = {{
+                    'url': url,
+                    'text': link_data['text'],
+                    'status': status_code,
+                    'valid': status_code < 400
+                }}
+                
+                if status_code < 400:
+                    self.valid_links.append(link_result)
+                    print(f"[OK] {{url}} - Status: {{status_code}}")
+                else:
+                    self.broken_links.append(link_result)
+                    print(f"[FAIL] {{url}} - Status: {{status_code}}")
+                    
+            except Exception as e:
+                link_result = {{
+                    'url': url,
+                    'text': link_data['text'],
+                    'status': 'ERROR',
+                    'error': str(e),
+                    'valid': False
+                }}
+                self.broken_links.append(link_result)
+                print(f"[ERROR] {{url}} - Error: {{e}}")
+    
+    def _generate_report(self):
+        """Generate detailed JSON report"""
+        report_data = {{
+            'test_case': '{test_case.id}',
+            'base_url': self.base_url,
+            'total_links': len(self.all_links),
+            'valid_links_count': len(self.valid_links),
+            'broken_links_count': len(self.broken_links),
+            'valid_links': self.valid_links,
+            'broken_links': self.broken_links,
+            'summary': {{
+                'success_rate': f"{{(len(self.valid_links) / len(self.all_links) * 100):.1f}}%" if self.all_links else "0%",
+                'total_validated': len(self.all_links)
+            }}
+        }}
+        
+        report_file = f"reports/{{'{test_case.id}'.lower()}}_links_report.json"
+        with open(report_file, 'w') as f:
+            json.dump(report_data, f, indent=2)
+        
+        print(f"\\n[REPORT] Report saved to: {{report_file}}")
+    
     def teardown_method(self):
         """Cleanup after test"""
         # Add cleanup logic if needed
@@ -387,6 +499,7 @@ class AITestAutomationAgent:
         self.test_generator = None
         self.script_generator = None
         self.results = {}
+        self.base_url = "https://your-application-url.com"  # Default fallback
     
     def process_requirements(self, document_text: str) -> Dict[str, Any]:
         """
@@ -398,37 +511,42 @@ class AITestAutomationAgent:
         Returns:
             Dictionary containing all generated artifacts
         """
-        print("🤖 AI Test Automation Agent Started")
+        print("[AI AGENT] AI Test Automation Agent Started")
         print("=" * 60)
         
         # Step 1: Parse requirements
-        print("\n📄 Step 1: Parsing requirements document...")
+        print("\n[STEP 1] Parsing requirements document...")
         self.parser = RequirementParser(document_text)
         parsed_data = self.parser.parse()
-        print(f"   ✓ Extracted {len(parsed_data['use_cases'])} use cases")
-        print(f"   ✓ Extracted {len(parsed_data['requirements'])} requirements")
+        print(f"   [OK] Extracted {len(parsed_data['use_cases'])} use cases")
+        print(f"   [OK] Extracted {len(parsed_data['requirements'])} requirements")
+        
+        # Extract Base URL from Test Data section
+        self._extract_base_url(document_text)
         
         # Step 2: Generate test cases
-        print("\n🧪 Step 2: Generating test cases...")
+        print("\n[STEP 2] Generating test cases...")
         self.test_generator = TestCaseGenerator(self.parser.use_cases)
         test_cases = self.test_generator.generate()
-        print(f"   ✓ Generated {len(test_cases)} test cases")
+        print(f"   [OK] Generated {len(test_cases)} test cases")
         
         # Step 3: Identify automation candidates
-        print("\n🎯 Step 3: Identifying automation candidates...")
+        print("\n[STEP 3] Identifying automation candidates...")
         automation_candidates = [tc for tc in test_cases if tc.automation_priority != AutomationPriority.NOT_SUITABLE.value]
-        print(f"   ✓ Identified {len(automation_candidates)} automation candidates")
+        print(f"   [OK] Identified {len(automation_candidates)} automation candidates")
         
         high_priority = len([tc for tc in automation_candidates if tc.automation_priority == AutomationPriority.HIGH.value])
         medium_priority = len([tc for tc in automation_candidates if tc.automation_priority == AutomationPriority.MEDIUM.value])
+        low_priority = len([tc for tc in automation_candidates if tc.automation_priority == AutomationPriority.LOW.value])
         print(f"     - High Priority: {high_priority}")
         print(f"     - Medium Priority: {medium_priority}")
+        print(f"     - Low Priority: {low_priority}")
         
         # Step 4: Generate Playwright scripts
-        print("\n🚀 Step 4: Generating Playwright Python scripts...")
-        self.script_generator = PlaywrightScriptGenerator(test_cases)
+        print("\n[STEP 4] Generating Playwright Python scripts...")
+        self.script_generator = PlaywrightScriptGenerator(test_cases, self.base_url)
         scripts = self.script_generator.generate()
-        print(f"   ✓ Generated {len(scripts)} automation scripts")
+        print(f"   [OK] Generated {len(scripts)} automation scripts")
         
         # Compile results
         self.results = {
@@ -445,10 +563,22 @@ class AITestAutomationAgent:
             }
         }
         
-        print("\n✅ Processing Complete!")
+        print("\n[SUCCESS] Processing Complete!")
         print("=" * 60)
         
         return self.results
+    
+    def _extract_base_url(self, document_text: str):
+        """Extract Base URL from Test Data section"""
+        # Look for "Base URL:" pattern in the document
+        base_url_pattern = r'Base URL:\s*(https?://[^\s\n]+)'
+        match = re.search(base_url_pattern, document_text, re.IGNORECASE)
+        
+        if match:
+            self.base_url = match.group(1).rstrip('/')  # Remove trailing slash
+            print(f"   [OK] Extracted Base URL: {self.base_url}")
+        else:
+            print(f"   [WARN] No Base URL found, using default: {self.base_url}")
     
     def save_results(self, output_dir: str = "."):
         """Save all generated artifacts to files"""
@@ -458,7 +588,7 @@ class AITestAutomationAgent:
         os.makedirs(output_dir, exist_ok=True)
         
         # Save JSON report
-        with open(os.path.join(output_dir, "test_automation_report.json"), "w") as f:
+        with open(os.path.join(output_dir, "test_automation_report.json"), "w", encoding="utf-8") as f:
             json.dump(self.results, f, indent=2)
         
         # Save individual scripts
@@ -467,10 +597,10 @@ class AITestAutomationAgent:
         
         for script in self.results['automation_scripts']:
             script_path = os.path.join(scripts_dir, script['script_name'])
-            with open(script_path, "w") as f:
+            with open(script_path, "w", encoding="utf-8") as f:
                 f.write(script['script_content'])
         
-        print(f"\n💾 Results saved to: {output_dir}")
+        print(f"\n[SAVED] Results saved to: {output_dir}")
         print(f"   - Report: test_automation_report.json")
         print(f"   - Scripts: {scripts_dir}/")
 

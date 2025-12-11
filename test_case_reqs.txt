@@ -1,0 +1,234 @@
+Use Case 1: Verify Globe Life Investor Relations Homepage Links
+Description: Launch the Globe Life investor relations website and verify all links on the home page are working and return HTTP status code 200
+URL: https://investors.globelifeinsurance.com/
+
+Preconditions:
+- Internet connection is available
+- Website is accessible
+- Browser is installed
+
+Steps:
+1. Navigate to https://investors.globelifeinsurance.com/
+2. Wait for page to load completely
+3. Extract all links (anchor tags) from the homepage using page.locator("a[href]").all()
+4. For each link, extract href attribute and validate URL
+5. Send HTTP HEAD request to verify status code using requests library
+6. Log each link validation result with URL and status code
+7. Print comprehensive summary showing total links, broken links count
+8. Save detailed JSON report with all link validation results
+9. Assert that no broken links are found (except acceptable 403 status codes)
+
+Expected Results:
+- Homepage loads successfully
+- All links are extracted correctly
+- All links return HTTP status code 200
+- No broken links are found
+- Validation report is generated
+- HTML report includes complete list of all validated links with status codes
+- HTML report shows link validation summary with pass/fail counts
+
+Priority: High
+
+Use Case 2: Comprehensive Site-Wide Link Validation
+Description: Crawl the entire Globe Life investor relations website, discover all pages, and validate all links across the entire site
+URL: https://investors.globelifeinsurance.com/
+
+Preconditions:
+- Internet connection is available
+- Website is accessible
+- Browser with JavaScript support is available
+- Sufficient time allocated for full site crawl
+
+Steps:
+1. Navigate to https://investors.globelifeinsurance.com/
+2. Extract all links from the homepage
+3. Click each internal link to navigate to new pages
+4. For each new page discovered, extract all links
+5. Track visited pages to avoid infinite loops
+6. For each link found, verify HTTP status code
+7. Validate both internal and external links
+8. Handle dynamic content loaded via JavaScript
+9. Click navigation menus and dropdowns to discover hidden pages
+10. Validate links in footer, header, and sidebar sections
+11. Generate comprehensive report with all findings
+
+Expected Results:
+- All pages on the site are discovered and visited
+- All links across all pages return status code 200
+- Navigation menus and dropdowns are tested
+- Dynamic content links are validated
+- External links are verified
+- Comprehensive report includes page hierarchy
+- Broken links are identified with page location
+- Report includes total pages crawled and links validated
+- HTML report contains detailed list of all validated links organized by page
+- HTML report shows link validation results with status codes and response times
+
+Priority: High
+
+Use Case 3: Navigation Menu Link Validation
+Description: Validate all links in the main navigation menu including dropdowns and submenus
+URL: https://investors.globelifeinsurance.com/
+
+Preconditions:
+- Website is accessible
+- Browser supports hover and click interactions
+
+Steps:
+1. Navigate to https://investors.globelifeinsurance.com/
+2. Identify main navigation menu
+3. Hover over each menu item to reveal dropdowns
+4. Extract all menu and submenu links
+5. Click each menu link and verify page loads
+6. Verify each destination page returns status code 200
+7. Validate breadcrumb navigation on each page
+8. Test back button functionality
+9. Verify menu remains consistent across pages
+
+Expected Results:
+- All navigation menu items are clickable
+- All dropdown menus expand correctly
+- All menu links navigate to valid pages
+- All pages return status code 200
+- Breadcrumbs are accurate
+- Navigation is consistent across site
+- HTML report lists all navigation menu links with validation status
+- HTML report includes dropdown menu structure and link validation results
+
+Priority: High
+
+Use Case 4: Footer and Utility Links Validation
+Description: Validate all links in footer, social media icons, and utility navigation
+URL: https://investors.globelifeinsurance.com/
+
+Preconditions:
+- Website is accessible
+- External sites are reachable
+
+Steps:
+1. Navigate to https://investors.globelifeinsurance.com/
+2. Scroll to footer section
+3. Extract all footer links
+4. Validate social media icon links
+5. Test utility links (Privacy Policy, Terms, Contact, etc.)
+6. Verify external links open correctly
+7. Check for broken social media links
+8. Validate email and phone links
+9. Test document download links (PDFs, reports)
+
+Expected Results:
+- All footer links are valid
+- Social media links open correct profiles
+- Utility pages load successfully
+- External links return status code 200
+- Email links have proper mailto format
+- Document downloads are accessible
+- No broken links in footer
+- HTML report displays all footer links with validation status
+- HTML report categorizes links by type (social media, utility, documents, external)
+
+Priority: Medium
+
+Use Case 5: Dynamic Content and AJAX Link Validation
+Description: Validate links that are loaded dynamically via JavaScript or AJAX
+URL: https://investors.globelifeinsurance.com/
+
+Preconditions:
+- JavaScript is enabled
+- Browser supports dynamic content loading
+
+Steps:
+1. Navigate to https://investors.globelifeinsurance.com/
+2. Wait for all dynamic content to load
+3. Identify AJAX-loaded sections
+4. Trigger dynamic content loading (scroll, click, etc.)
+5. Extract links from dynamically loaded content
+6. Validate each dynamic link
+7. Test pagination links if present
+8. Validate "Load More" or infinite scroll links
+9. Test search results links
+10. Validate filtered content links
+
+Expected Results:
+- All dynamic content loads successfully
+- AJAX-loaded links are valid
+- Pagination works correctly
+- Search functionality returns valid links
+- Filtered content links are accessible
+- All dynamic links return status code 200
+- HTML report includes all dynamically loaded links with validation results
+- HTML report shows AJAX and JavaScript-generated link validation status
+
+Priority: Medium
+
+Use Case 6: Automatic Test Report Launch and Display
+Description: Automatically launch and display HTML test reports in the default browser after test execution completes, regardless of test results
+URL: Local file system (generated HTML reports)
+
+Preconditions:
+- Test execution has completed
+- HTML report has been generated
+- Default browser is available on the system
+- Operating system supports file association with HTML files
+
+Steps:
+1. Complete test execution (all test cases)
+2. Generate HTML report with test results
+3. Determine operating system (Windows, Linux, Mac)
+4. Attempt to launch HTML report in default browser
+5. Use appropriate system command for OS (start/open/xdg-open)
+6. Handle exceptions if browser launch fails
+7. Display success message when report opens
+8. Provide fallback instructions if auto-launch fails
+9. Log report launch attempt and result
+10. Ensure report launches regardless of test pass/fail status
+
+Expected Results:
+- HTML report opens automatically in default browser
+- Report launches even when some tests fail
+- Appropriate system command is used for each OS
+- Success message confirms report launch
+- Fallback instructions provided if launch fails
+- Report contains all test execution details
+- Report displays parallel execution results
+- Report shows test timing and performance metrics
+- User can immediately view test results without manual navigation
+- Consistent behavior across Windows, Linux, and Mac systems
+
+Priority: High
+
+Test Data:
+- Base URL: https://investors.globelifeinsurance.com/
+- Expected Status Code: 200
+- Acceptable Status Codes: 200, 301, 302 (redirects)
+- Timeout: 30 seconds per link
+- Max Crawl Depth: 5 levels
+- Max Pages to Crawl: 100
+- Report File Path: reports/complete_automation_report.html
+- Windows Launch Command: start reports\\complete_automation_report.html
+- Mac Launch Command: open reports/complete_automation_report.html
+- Linux Launch Command: xdg-open reports/complete_automation_report.html
+- Report Launch Timeout: 5 seconds
+- Browser Launch Success Message: "[BROWSER] Opening HTML report in browser..."
+- Browser Launch Failure Message: "[INFO] Could not auto-open report: {error}"
+
+Acceptance Criteria:
+- 100% of internal links must return status code 200 or valid redirect
+- External links should return 200 or be flagged for review
+- Test must identify all unique pages on the site
+- Report must include page hierarchy and link relationships
+- Broken links must be reported with source page location
+- Test should complete within 30 minutes
+- Report must include link URL, status code, response time, and source page
+- Any link with status code 404, 500, or timeout should be flagged as critical failure
+- HTML report must display comprehensive list of all validated links
+- HTML report must include interactive tables with sortable columns for link analysis
+- HTML report must show validation summary with total links, pass/fail counts, and execution time
+- HTML report must categorize links by type (internal, external, navigation, footer, dynamic)
+- HTML report must highlight broken links with clear visual indicators
+- HTML report must launch automatically in default browser after test completion
+- Report launch must work regardless of test pass/fail status (always launch)
+- System must use appropriate OS-specific command (start for Windows, open for Mac, xdg-open for Linux)
+- Fallback instructions must be provided if automatic launch fails
+- Report launch attempt must be logged with success/failure status
+- User must be able to view results immediately without manual file navigation

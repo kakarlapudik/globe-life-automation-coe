@@ -34,10 +34,9 @@ jobs:
     - name: Run verification setup
       run: python verify_setup.py
     
-    - name: Run test suite
+    - name: Run test suite (parallel execution)
       run: |
-        cd generated_tests
-        python run_tests.py
+        pytest generated_tests/ -v --html=reports/test_report.html --self-contained-html -n auto --dist worksteal --junit-xml=reports/junit.xml
       env:
         # Disable SSL verification for corporate environments
         PYTHONHTTPSVERIFY: 0

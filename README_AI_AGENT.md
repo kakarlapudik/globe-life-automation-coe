@@ -166,7 +166,7 @@ jobs:
           python-version: '3.11'
       - run: pip install -r requirements.txt
       - run: playwright install
-      - run: pytest generated_tests/ --html=report.html
+      - run: pytest generated_tests/ --html=report.html  # Runs in parallel by default
 ```
 
 ## Best Practices

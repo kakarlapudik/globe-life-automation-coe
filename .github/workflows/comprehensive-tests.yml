@@ -49,27 +49,27 @@ jobs:
       run: |
         playwright install chromium --with-deps
     
-    - name: Run specific test category
+    - name: Run specific test category (parallel execution)
       run: |
         cd generated_tests
         case "${{ github.event.inputs.test_category }}" in
           "homepage")
-            python -m pytest test_homepage_links.py -v --html=reports/homepage_report.html
+            python -m pytest test_homepage_links.py -v --html=reports/homepage_report.html --self-contained-html -n auto --dist worksteal
             ;;
           "navigation")
-            python -m pytest test_navigation_menu.py -v --html=reports/navigation_report.html
+            python -m pytest test_navigation_menu.py -v --html=reports/navigation_report.html --self-contained-html -n auto --dist worksteal
             ;;
           "footer")
-            python -m pytest test_footer_links.py -v --html=reports/footer_report.html
+            python -m pytest test_footer_links.py -v --html=reports/footer_report.html --self-contained-html -n auto --dist worksteal
             ;;
           "dynamic")
-            python -m pytest test_dynamic_content.py -v --html=reports/dynamic_report.html
+            python -m pytest test_dynamic_content.py -v --html=reports/dynamic_report.html --self-contained-html -n auto --dist worksteal
             ;;
           "sitewide")
-            python -m pytest test_sitewide_crawl.py -v --html=reports/sitewide_report.html
+            python -m pytest test_sitewide_crawl.py -v --html=reports/sitewide_report.html --self-contained-html -n auto --dist worksteal
             ;;
           *)
-            python run_tests.py
+            python -m pytest . -v --html=reports/all_tests_report.html --self-contained-html -n auto --dist worksteal
             ;;
         esac
       env:

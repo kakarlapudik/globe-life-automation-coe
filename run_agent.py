@@ -36,19 +36,19 @@ def main():
     # Read requirements file
     requirements_path = Path(args.requirements_file)
     if not requirements_path.exists():
-        print(f"❌ Error: Requirements file not found: {args.requirements_file}")
+        print(f"[ERROR] Requirements file not found: {args.requirements_file}")
         sys.exit(1)
     
     with open(requirements_path, "r", encoding="utf-8") as f:
         requirements_text = f.read()
     
     if not requirements_text.strip():
-        print("❌ Error: Requirements file is empty")
+        print("[ERROR] Requirements file is empty")
         sys.exit(1)
     
     # Initialize and run agent
-    print(f"\n📂 Reading requirements from: {args.requirements_file}")
-    print(f"📁 Output directory: {args.output}\n")
+    print(f"\n[INFO] Reading requirements from: {args.requirements_file}")
+    print(f"[INFO] Output directory: {args.output}\n")
     
     agent = AITestAutomationAgent()
     
@@ -58,7 +58,7 @@ def main():
         
         # Print summary
         print("\n" + "=" * 60)
-        print("📊 SUMMARY")
+        print("SUMMARY")
         print("=" * 60)
         print(f"Use Cases Extracted: {results['summary']['total_use_cases']}")
         print(f"Requirements Extracted: {results['summary']['total_requirements']}")
@@ -67,14 +67,14 @@ def main():
         print(f"Scripts Generated: {results['summary']['scripts_generated']}")
         print("=" * 60)
         
-        print("\n✅ Success! Check the output directory for generated artifacts.")
-        print(f"\n💡 Next steps:")
+        print("\n[SUCCESS] Check the output directory for generated artifacts.")
+        print(f"\n[NEXT STEPS]")
         print(f"   1. Review generated test cases in: {args.output}/test_automation_report.json")
         print(f"   2. Customize test scripts in: {args.output}/generated_tests/")
         print(f"   3. Run tests with: pytest {args.output}/generated_tests/")
         
     except Exception as e:
-        print(f"\n❌ Error processing requirements: {str(e)}")
+        print(f"\n[ERROR] Error processing requirements: {str(e)}")
         if args.verbose:
             import traceback
             traceback.print_exc()
