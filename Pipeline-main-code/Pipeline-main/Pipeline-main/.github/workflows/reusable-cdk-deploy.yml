@@ -1,0 +1,108 @@
+name: Reusable CDK Deploy Workflow
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: false
+        type: string
+        default: 'dev'
+      aws-region:
+        required: false
+        type: string
+        default: 'us-west-2'
+      app-name:
+        required: true
+        type: string
+      permissions-boundary:
+        required: true
+        type: string
+      aws-account-id:
+        required: true
+        type: string
+        description: 'Primary AWS Account ID'
+      tst-account-id:
+        required: true
+        type: string
+        description: 'Test AWS Account ID'
+      stg-account-id:
+        required: true
+        type: string
+        description: 'Staging AWS Account ID'
+      prd-account-id:
+        required: true
+        type: string
+        description: 'Production AWS Account ID'
+
+permissions:
+  deployments: write
+  statuses: write
+  contents: write
+  id-token: write
+  actions: write
+  checks: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  build_cdk:
+    runs-on: 
+      - self-hosted
+            
+    steps:
+      - uses: GlobeLifeAppDev/actions-checkout-v4@main
+
+      - name: Debug Deployment ID
+        run: echo "Deployment ID is ${{ steps.create_deployment.outputs.deployment_id }}"
+
+      - name: Set up Node
+        uses: GlobeLifeAppDev/actions-setup-node-v4.0.3@main
+        with:
+          node-version: '20'
+
+      - name: Set environment variables
+        run: |
+          $env:CDK_DEFAULT_REGION="${{ inputs.aws-region }}"
+          $env:CDK_DEFAULT_ACCOUNT="${{ inputs.aws-account-id }}"
+          $env:TST_ACCOUNT="${{ inputs.tst-account-id }}"
+          $env:STG_ACCOUNT="${{ inputs.stg-account-id }}"
+          $env:PRD_ACCOUNT="${{ inputs.prd-account-id }}"
+          $env:APP_NAME="${{ inputs.app-name }}"
+          $env:APP_DIR="App"
+          $env:PERMISSIONS_BOUNDARY="${{ inputs.permissions-boundary }}"
+          
+          "CDK_DEFAULT_ACCOUNT=$($env:CDK_DEFAULT_ACCOUNT)" >> $env:GITHUB_ENV
+          "TST_ACCOUNT=$($env:TST_ACCOUNT)" >> $env:GITHUB_ENV
+          "STG_ACCOUNT=$($env:STG_ACCOUNT)" >> $env:GITHUB_ENV
+          "PRD_ACCOUNT=$($env:PRD_ACCOUNT)" >> $env:GITHUB_ENV
+          "APP_NAME=$($env:APP_NAME)" >> $env:GITHUB_ENV
+          "APP_DIR=$($env:APP_DIR)" >> $env:GITHUB_ENV
+          "PERMISSIONS_BOUNDARY=$($env:PERMISSIONS_BOUNDARY)" >> $env:GITHUB_ENV
+          "CDK_DEFAULT_REGION=$($env:CDK_DEFAULT_REGION)" >> $env:GITHUB_ENV
+
+      - name: Install Dependencies
+        working-directory: ./PipelineStack/
+        run: |
+           npm install -g aws-cdk
+           npm install           
+
+    #   - uses: actions/upload-artifact@v4
+    #     with:
+    #       name: artifacts
+    #       path: |
+    #             bin/**
+    #             **/cdk.out/**
+    #             lib/**
+
+      - name: Configure AWS credentials
+        uses: GlobeLifeAppDev/aws-actions-configure-aws-credentials-v4@main
+        with:
+          role-to-assume: arn:aws:iam::${{ env.CDK_DEFAULT_ACCOUNT }}:role/GitHub_AccessRole
+          aws-region: ${{ inputs.aws-region }}
+          
+      - name: Deploy to AWS
+        working-directory: ./PipelineStack/
+        id: deploy
+        run: |
+          cdk bootstrap "aws://${{ env.CDK_DEFAULT_ACCOUNT }}/${{ env.CDK_DEFAULT_REGION }}" --toolkit-stack-name CDKToolkit${{ env.APP_NAME }} --custom-permissions-boundary ${{ env.PERMISSIONS_BOUNDARY }} --cloudformation-execution-policies "arn:aws:iam::aws:policy/AdministratorAccess,arn:aws:iam::aws:policy/CloudWatchFullAccessV2,arn:aws:iam::aws:policy/AmazonSNSFullAccess,arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess,arn:aws:iam::aws:policy/AWSCodeDeployFullAccess,arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess,arn:aws:iam::aws:policy/AWSLambda_FullAccess,arn:aws:iam::${{ env.CDK_DEFAULT_ACCOUNT }}:policy/GitHubActions_Permissions" --qualifier $("${{ env.APP_NAME }}".ToLower())
+          cdk deploy PipelineStack${{ env.APP_NAME }} --require-approval never 

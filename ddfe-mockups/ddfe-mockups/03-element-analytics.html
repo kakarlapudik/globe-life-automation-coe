@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Element Analytics - DDFE Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .nav-tabs {
+            background: white;
+            border-bottom: 2px solid #e1e8ed;
+            padding: 0 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-tab {
+            padding: 1rem 0;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            border-bottom-color: #3498db;
+            color: #3498db;
+            font-weight: 500;
+        }
+        
+        .main-content {
+            padding: 2rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .filter-select {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-trend {
+            font-size: 0.9rem;
+            color: #27ae60;
+        }
+        
+        .metric-trend.down {
+            color: #e74c3c;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+        
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e1e8ed;
+        }
+        
+        .chart-container {
+            height: 300px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 1rem 0;
+            border-bottom: 2px solid #e1e8ed;
+            position: relative;
+        }
+        
+        .chart-bar {
+            width: 60px;
+            background: linear-gradient(to top, #3498db, #5dade2);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .chart-bar:hover {
+            background: linear-gradient(to top, #2980b9, #3498db);
+        }
+        
+        .chart-label {
+            text-align: center;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            color: #7f8c8d;
+        }
+        
+        .chart-legend {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .list-card {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .list-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e1e8ed;
+        }
+        
+        .list-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f5f7fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-number {
+            font-weight: 600;
+            color: #7f8c8d;
+            margin-right: 0.5rem;
+        }
+        
+        .list-value {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .list-value.danger {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .view-all {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        .view-all-link {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .health-bar-container {
+            margin: 1rem 0;
+        }
+        
+        .health-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .health-label {
+            width: 80px;
+            font-size: 0.9rem;
+        }
+        
+        .health-bar {
+            flex: 1;
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding-left: 1rem;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .health-bar.success {
+            background: #27ae60;
+        }
+        
+        .health-bar.warning {
+            background: #f39c12;
+        }
+        
+        .health-bar.danger {
+            background: #e74c3c;
+        }
+        
+        .health-legend {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+        
+        .recommendations-card {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .recommendation-item {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #3498db;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .recommendation-item.warning {
+            border-left-color: #f39c12;
+        }
+        
+        .recommendation-item.info {
+            border-left-color: #3498db;
+        }
+        
+        .recommendation-item.success {
+            border-left-color: #27ae60;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: white;
+            border: 2px solid #e1e8ed;
+            color: #2c3e50;
+        }
+        
+        .btn-secondary:hover {
+            border-color: #3498db;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 AI Test Automation Platform</h1>
+        <div class="header-right">
+            <span>John Doe ▼</span>
+            <span>🔔</span>
+            <span>⚙️</span>
+        </div>
+    </div>
+    
+    <div class="nav-tabs">
+        <div class="nav-tab">Dashboard</div>
+        <div class="nav-tab">Tests</div>
+        <div class="nav-tab active">► Elements</div>
+        <div class="nav-tab">Execution</div>
+        <div class="nav-tab">Reports</div>
+        <div class="nav-tab">Analytics</div>
+    </div>
+    
+    <div class="main-content">
+        <h2 class="page-title">Element Analytics</h2>
+        
+        <div class="filters">
+            <select class="filter-select">
+                <option>Time Range: Last 30 Days</option>
+                <option>Last 7 Days</option>
+                <option>Last 90 Days</option>
+                <option>Custom Range</option>
+            </select>
+            <select class="filter-select">
+                <option>Application: All Applications</option>
+                <option>E-Commerce App</option>
+                <option>Mobile App</option>
+                <option>Admin Portal</option>
+            </select>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">📊 Total Elements</div>
+                <div class="metric-value">127</div>
+                <div class="metric-trend">↑ 12 from last month</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">✅ Healthy Elements</div>
+                <div class="metric-value">98 <span style="font-size: 1.5rem; color: #7f8c8d;">(77%)</span></div>
+                <div class="metric-trend">↑ 5 from last month</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">⚠️ Need Attention</div>
+                <div class="metric-value">29 <span style="font-size: 1.5rem; color: #7f8c8d;">(23%)</span></div>
+                <div class="metric-trend down">↓ 3 from last month</div>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <div class="chart-title">Element Usage Over Time</div>
+            <div class="chart-container">
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="chart-bar" style="height: 80px;"></div>
+                    <div class="chart-label">Week 1</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="chart-bar" style="height: 120px;"></div>
+                    <div class="chart-label">Week 2</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="chart-bar" style="height: 160px;"></div>
+                    <div class="chart-label">Week 3</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="chart-bar" style="height: 200px;"></div>
+                    <div class="chart-label">Week 4</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="chart-bar" style="height: 240px;"></div>
+                    <div class="chart-label">Week 5</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="chart-bar" style="height: 220px;"></div>
+                    <div class="chart-label">Week 6</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="chart-bar" style="height: 260px;"></div>
+                    <div class="chart-label">Week 7</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="chart-bar" style="height: 280px;"></div>
+                    <div class="chart-label">Week 8</div>
+                </div>
+            </div>
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span>Total Uses</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #27ae60;"></div>
+                    <span>Successful</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Failed</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="two-column">
+            <div class="list-card">
+                <div class="list-title">Most Used Elements</div>
+                <div class="list-item">
+                    <div><span class="list-number">1.</span> Login Button</div>
+                    <div class="list-value">847 uses</div>
+                </div>
+                <div class="list-item">
+                    <div><span class="list-number">2.</span> Search Box</div>
+                    <div class="list-value">723 uses</div>
+                </div>
+                <div class="list-item">
+                    <div><span class="list-number">3.</span> Cart Icon</div>
+                    <div class="list-value">654 uses</div>
+                </div>
+                <div class="list-item">
+                    <div><span class="list-number">4.</span> Product Card</div>
+                    <div class="list-value">589 uses</div>
+                </div>
+                <div class="list-item">
+                    <div><span class="list-number">5.</span> Add to Cart Btn</div>
+                    <div class="list-value">512 uses</div>
+                </div>
+                <div class="view-all">
+                    <a href="#" class="view-all-link">View All →</a>
+                </div>
+            </div>
+            
+            <div class="list-card">
+                <div class="list-title">Elements with Failures</div>
+                <div class="list-item">
+                    <div><span class="list-number">1.</span> Submit Order Btn</div>
+                    <div class="list-value danger">15% fail</div>
+                </div>
+                <div class="list-item">
+                    <div><span class="list-number">2.</span> Date Picker</div>
+                    <div class="list-value danger">12% fail</div>
+                </div>
+                <div class="list-item">
+                    <div><span class="list-number">3.</span> Dropdown Menu</div>
+                    <div class="list-value danger">10% fail</div>
+                </div>
+                <div class="list-item">
+                    <div><span class="list-number">4.</span> Modal Close Btn</div>
+                    <div class="list-value danger">8% fail</div>
+                </div>
+                <div class="list-item">
+                    <div><span class="list-number">5.</span> File Upload</div>
+                    <div class="list-value danger">7% fail</div>
+                </div>
+                <div class="view-all">
+                    <a href="#" class="view-all-link">View All →</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <div class="chart-title">Selector Health Distribution</div>
+            <div class="health-bar-container">
+                <div class="health-bar-row">
+                    <div class="health-label">Healthy</div>
+                    <div class="health-bar success" style="width: 77%;">77%</div>
+                </div>
+                <div class="health-bar-row">
+                    <div class="health-label">Warning</div>
+                    <div class="health-bar warning" style="width: 15%;">15%</div>
+                </div>
+                <div class="health-bar-row">
+                    <div class="health-label">Failed</div>
+                    <div class="health-bar danger" style="width: 8%;">8%</div>
+                </div>
+            </div>
+            <div class="health-legend">
+                <div>🟢 <strong>Healthy:</strong> >90% success rate</div>
+                <div>🟡 <strong>Warning:</strong> 70-90% success rate</div>
+                <div>🔴 <strong>Failed:</strong> <70% success rate</div>
+            </div>
+        </div>
+        
+        <div class="recommendations-card">
+            <div class="chart-title">Recommendations</div>
+            
+            <div class="recommendation-item success">
+                🔧 <strong>5 elements</strong> haven't been used in 30+ days - consider archiving
+            </div>
+            
+            <div class="recommendation-item warning">
+                ⚠️ <strong>3 elements</strong> have low success rates - review selectors
+            </div>
+            
+            <div class="recommendation-item info">
+                💡 <strong>12 elements</strong> could benefit from fallback selectors
+            </div>
+            
+            <div class="recommendation-item info">
+                🎯 <strong>2 duplicate elements</strong> detected - consider consolidating
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary">View Detailed Report</button>
+                <button class="btn btn-secondary">Export Analytics</button>
+                <button class="btn btn-secondary">Schedule Report</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

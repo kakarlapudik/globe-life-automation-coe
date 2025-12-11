@@ -1,0 +1,87 @@
+---
+title: "Detailed Test Report"
+author: "RAPTOR Framework"
+date: today
+format:
+  html:
+    theme: journal
+    toc: true
+    toc-depth: 4
+    code-fold: show
+    self-contained: true
+    number-sections: true
+execute:
+  echo: true
+  warning: true
+  message: true
+fig-width: 10
+fig-height: 6
+---
+
+# Comprehensive Test Analysis
+
+This template provides detailed analysis of all test executions.
+
+## Test Environment
+
+- **Framework:** RAPTOR Python Playwright
+- **Execution Date:** {date}
+- **Environment:** {environment}
+
+## Test Execution Summary
+
+### Overall Statistics
+
+Detailed statistics with breakdowns by category.
+
+### Test Duration Analysis
+
+```{python}
+import plotly.express as px
+import pandas as pd
+
+# Detailed duration analysis
+# Box plots, violin plots, and statistical summaries
+```
+
+## Individual Test Results
+
+### Passed Tests
+
+Detailed information about all passed tests.
+
+### Failed Tests
+
+In-depth analysis of failures with:
+- Error messages
+- Stack traces
+- Screenshots
+- Reproduction steps
+
+### Skipped Tests
+
+Information about skipped tests and reasons.
+
+## Performance Metrics
+
+### Execution Time Analysis
+
+```{python}
+# Performance analysis code
+# Time series, percentiles, outliers
+```
+
+### Resource Utilization
+
+Memory and CPU usage during test execution.
+
+## Test Coverage
+
+Coverage metrics and gaps.
+
+## Recommendations
+
+Detailed recommendations for:
+- Test optimization
+- Failure resolution
+- Coverage improvement

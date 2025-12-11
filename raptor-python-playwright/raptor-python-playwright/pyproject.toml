@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raptor-playwright"
+version = "1.0.0"
+description = "RAPTOR Python Playwright Framework - Modern test automation framework"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "RAPTOR Team", email = "automation@example.com"}
+]
+keywords = ["playwright", "automation", "testing", "selenium", "framework"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Testing",
+]
+
+dependencies = [
+    "playwright>=1.40.0",
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "pyodbc>=5.0.0",
+    "click>=8.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "hypothesis>=6.90.0",
+    "pytest-cov>=4.1.0",
+    "pytest-html>=4.1.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+reporting = [
+    "allure-pytest>=2.13.0",
+]
+parallel = [
+    "pytest-xdist>=3.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/example/raptor-playwright"
+Documentation = "https://raptor-playwright.readthedocs.io"
+Repository = "https://github.com/example/raptor-playwright"
+Issues = "https://github.com/example/raptor-playwright/issues"
+
+[project.scripts]
+raptor = "raptor.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["raptor*"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+# Parallel execution with pytest-xdist
+# Use: pytest -n auto (auto-detect CPU count)
+# Or: pytest -n 4 (use 4 workers)
+markers = [
+    "asyncio: mark test as async",
+    "browser: mark test as requiring browser",
+    "database: mark test as requiring database",
+    "integration: mark test as integration test",
+    "slow: mark test as slow running",
+    "property: mark test as property-based test",
+    "smoke: mark test as smoke test",
+    "regression: mark test as regression test",
+    "flaky: mark test as potentially flaky",
+    "performance: mark test as performance test",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false

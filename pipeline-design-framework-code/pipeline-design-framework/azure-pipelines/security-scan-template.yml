@@ -1,0 +1,139 @@
+# Security Scanning Template
+# Reusable Azure Pipeline template for security scanning integration
+# Version: 1.0.0
+
+parameters:
+  - name: checkmarxTeam
+    type: string
+    displayName: 'Checkmarx Team Name'
+  
+  - name: checkmarxProject
+    type: string
+    default: ''
+    displayName: 'Checkmarx Project Name (optional)'
+  
+  - name: sourceDirectory
+    type: string
+    default: './'
+    displayName: 'Source Code Directory'
+  
+  - name: excludePatterns
+    type: string
+    default: '*.min.js,node_modules/**,*.log'
+    displayName: 'File Exclusion Patterns'
+  
+  - name: enableSonarQube
+    type: boolean
+    default: false
+    displayName: 'Enable SonarQube Scanning'
+  
+  - name: sonarQubeConnection
+    type: string
+    default: ''
+    displayName: 'SonarQube Service Connection'
+
+jobs:
+  - job: SecurityScanning
+    displayName: 'Security Scanning'
+    timeoutInMinutes: 120
+    
+    steps:
+      - checkout: self
+        displayName: 'Checkout Source Code'
+      
+      # Parameter Validation
+      - task: PowerShell@2
+        displayName: 'Validate Security Scan Parameters'
+        inputs:
+          targetType: 'inline'
+          script: |
+            Write-Host "Validating security scan parameters..."
+            
+            if ([string]::IsNullOrWhiteSpace('${{ parameters.checkmarxTeam }}')) {
+              Write-Error "Checkmarx team name is required"
+              exit 1
+            }
+            
+            Write-Host "✅ Security scan parameters validated"
+            Write-Host "Checkmarx Team: ${{ parameters.checkmarxTeam }}"
+            Write-Host "Source Directory: ${{ parameters.sourceDirectory }}"
+            Write-Host "SonarQube Enabled: ${{ parameters.enableSonarQube }}"
+      
+      # Checkmarx SAST Scanning
+      - task: CheckmarxCxSAST@2020
+        displayName: 'Checkmarx SAST Scan'
+        inputs:
+          CheckmarxService: 'Checkmarx-Connection'
+          projectName: '${{ coalesce(parameters.checkmarxProject, variables["Build.Repository.Name"]) }}'
+          teamName: '${{ parameters.checkmarxTeam }}'
+          preset: 'Checkmarx Default'
+          folderExclusion: '${{ parameters.excludePatterns }}'
+          fileExtension: '!*.min.js,!*.log'
+          incremental: true
+          fullScanCycle: 10
+          enableSynchronousMode: true
+          enablePolicyViolations: true
+          policyViolationFailBuild: true
+          generatePDFReport: true
+          enableProjectPolicyEnforcement: true
+        continueOnError: false
+      
+      # SonarQube Analysis (if enabled)
+      - task: SonarQubePrepare@5
+        displayName: 'Prepare SonarQube Analysis'
+        condition: eq('${{ parameters.enableSonarQube }}', true)
+        inputs:
+          SonarQube: '${{ parameters.sonarQubeConnection }}'
+          scannerMode: 'CLI'
+          configMode: 'manual'
+          cliProjectKey: '$(Build.Repository.Name)'
+          cliProjectName: '$(Build.Repository.Name)'
+          cliSources: '${{ parameters.sourceDirectory }}'
+          extraProperties: |
+            sonar.exclusions=${{ parameters.excludePatterns }}
+            sonar.coverage.exclusions=**/*test*/**,**/*spec*/**
+      
+      - task: SonarQubeAnalyze@5
+        displayName: 'Run SonarQube Analysis'
+        condition: eq('${{ parameters.enableSonarQube }}', true)
+      
+      - task: SonarQubePublish@5
+        displayName: 'Publish SonarQube Results'
+        condition: eq('${{ parameters.enableSonarQube }}', true)
+        inputs:
+          pollingTimeoutSec: '300'
+      
+      # Dependency Vulnerability Scanning
+      - task: dependency-check-build-task@6
+        displayName: 'OWASP Dependency Check'
+        inputs:
+          projectName: '$(Build.Repository.Name)'
+          scanPath: '${{ parameters.sourceDirectory }}'
+          format: 'ALL'
+          additionalArguments: '--enableRetired --enableExperimental'
+        continueOnError: true
+      
+      # Security Scan Results Summary
+      - task: PowerShell@2
+        displayName: 'Security Scan Summary'
+        condition: always()
+        inputs:
+          targetType: 'inline'
+          script: |
+            Write-Host "=== Security Scan Summary ==="
+            Write-Host "Project: $(Build.Repository.Name)"
+            Write-Host "Checkmarx Team: ${{ parameters.checkmarxTeam }}"
+            Write-Host "Scan Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+            Write-Host ""
+            Write-Host "Security scanning phase completed."
+      
+      # Publish Security Reports
+      - task: PublishTestResults@2
+        displayName: 'Publish Security Test Results'
+        condition: always()
+        inputs:
+          testResultsFormat: 'JUnit'
+          testResultsFiles: '**/dependency-check-junit.xml'
+          testRunTitle: 'Security Dependency Check'
+          mergeTestResults: true
+        continueOnError: true

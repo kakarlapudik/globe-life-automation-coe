@@ -1,0 +1,7 @@
+# AI Test Automation Agent Dependencies
+pytest==7.4.3
+playwright==1.40.0
+pytest-playwright==0.4.3
+pytest-html==4.1.1
+pytest-xdist==3.5.0
+allure-pytest==2.13.2

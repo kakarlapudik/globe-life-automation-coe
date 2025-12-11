@@ -1,0 +1,38 @@
+---
+title: "RAPTOR Test Report"
+author: "RAPTOR Framework"
+date: today
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    self-contained: true
+execute:
+  echo: false
+  warning: false
+  message: false
+fig-width: 10
+fig-height: 6
+---
+
+# Test Execution Report
+
+This is the default Quarto template for RAPTOR test reports.
+
+## Executive Summary
+
+Test execution summary will be inserted here.
+
+## Test Results Visualization
+
+Interactive visualizations will be inserted here.
+
+## Detailed Test Results
+
+Detailed test information will be inserted here.
+
+## Performance Analysis
+
+Performance metrics and charts will be inserted here.

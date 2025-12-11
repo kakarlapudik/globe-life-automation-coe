@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Element Detection - DDFE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .nav-tabs {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+        .nav-tab {
+            padding: 1rem 0;
+            text-decoration: none;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .nav-tab:hover {
+            color: #667eea;
+        }
+        .main-content {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 2rem;
+        }
+        .breadcrumb {
+            margin-bottom: 1rem;
+        }
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .detection-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e0e0e0;
+        }
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #555;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #e0e0e0;
+        }
+        .btn-secondary:hover {
+            background: #e9ecef;
+            color: #333;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .progress-container {
+            margin: 2rem 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 65%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        .detected-elements {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .element-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e0e0e0;
+            transition: all 0.2s ease;
+        }
+        .element-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+        .element-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .element-name {
+            font-weight: 600;
+            color: #333;
+        }
+        .confidence-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .confidence-high {
+            background: #d4edda;
+            color: #155724;
+        }
+        .confidence-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .confidence-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .element-details {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        .element-selector {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 0.5rem;
+        }
+        .element-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        .status-message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .status-info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #90caf9;
+        }
+        .status-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #81c784;
+        }
+        .status-warning {
+            background: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #ffb74d;
+        }
+        @media (max-width: 1024px) {
+            .detection-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+            .nav-tabs {
+                padding: 0 1rem;
+                overflow-x: auto;
+            }
+            .main-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🤖 AI Test Automation Platform</h1>
+        <div class="user-menu">
+            <span>👤 John Doe</span>
+            <span>🔔</span>
+            <span>⚙️</span>
+        </div>
+    </header>
+    <nav class="nav-tabs">
+        <a href="00-dashboard.html" class="nav-tab">☰ Dashboard</a>
+        <a href="#" class="nav-tab">Tests</a>
+        <a href="01-element-browser.html" class="nav-tab active">Elements</a>
+        <a href="#" class="nav-tab">Execution</a>
+        <a href="#" class="nav-tab">Reports</a>
+        <a href="03-element-analytics.html" class="nav-tab">Analytics</a>
+    </nav>
+    <main class="main-content">
+        <div class="breadcrumb">
+            <a href="01-element-browser.html">← Back to Elements</a>
+        </div>
+        <h1 class="page-title">🤖 AI Element Detection</h1>
+        
+        <div class="detection-container">
+            <div class="panel">
+                <h2 class="panel-title">Configure Detection</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Page URL *</label>
+                    <input type="text" class="form-input" value="https://shop.example.com" placeholder="Enter page URL">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Application</label>
+                    <select class="form-input">
+                        <option>E-Commerce Web Application</option>
+                        <option>Mobile App</option>
+                        <option>Admin Portal</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Page</label>
+                    <select class="form-input">
+                        <option>Home Page</option>
+                        <option>Cart Page</option>
+                        <option>Checkout Page</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Detection Options</label>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Detect buttons
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Detect input fields
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Detect links
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox"> Detect images
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox"> Detect dropdowns
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox"> Detect dynamic elements
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Minimum Confidence</label>
+                    <select class="form-input">
+                        <option>High (90%+)</option>
+                        <option selected>Medium (70%+)</option>
+                        <option>Low (50%+)</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary" style="width: 100%;">🔍 Start Detection</button>
+            </div>
+            
+            <div class="panel">
+                <h2 class="panel-title">Detection Status</h2>
+                
+                <div class="status-message status-info">
+                    <strong>🔄 Detection in Progress</strong><br>
+                    Analyzing page structure and identifying elements...
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill">65%</div>
+                    </div>
+                    <div style="margin-top: 0.5rem; text-align: center; color: #666;">
+                        Processed 26 of 40 elements
+                    </div>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">Current Step:</div>
+                    <div style="color: #666;">Analyzing interactive elements...</div>
+                </div>
+                
+                <div style="margin-top: 1.5rem;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">Statistics:</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div style="background: #e8f5e8; padding: 0.75rem; border-radius: 8px;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #2e7d32;">18</div>
+                            <div style="font-size: 0.9rem; color: #666;">High Confidence</div>
+                        </div>
+                        <div style="background: #fff3e0; padding: 0.75rem; border-radius: 8px;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #f57c00;">8</div>
+                            <div style="font-size: 0.9rem; color: #666;">Medium Confidence</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 class="panel-title" style="margin: 0;">Detected Elements (26)</h2>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-secondary">Select All</button>
+                    <button class="btn btn-success">Import Selected (12)</button>
+                </div>
+            </div>
+            
+            <div class="detected-elements">
+                <div class="element-card">
+                    <div class="element-header">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" checked>
+                            <span class="element-name">🔘 Login Button</span>
+                        </div>
+                        <span class="confidence-badge confidence-high">95% Confidence</span>
+                    </div>
+                    <div class="element-details">
+                        Type: Button | Location: Header Navigation
+                    </div>
+                    <div class="element-selector">
+                        Primary: #login-btn
+                    </div>
+                    <div class="element-selector">
+                        Fallback: button[type="submit"].login-button
+                    </div>
+                    <div class="element-actions">
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">✏️ Edit</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">🔍 Test</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">👁️ Preview</button>
+                    </div>
+                </div>
+                
+                <div class="element-card">
+                    <div class="element-header">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" checked>
+                            <span class="element-name">📝 Search Input</span>
+                        </div>
+                        <span class="confidence-badge confidence-high">92% Confidence</span>
+                    </div>
+                    <div class="element-details">
+                        Type: Input | Location: Header Navigation
+                    </div>
+                    <div class="element-selector">
+                        Primary: input[name="search"]
+                    </div>
+                    <div class="element-selector">
+                        Fallback: .search-input
+                    </div>
+                    <div class="element-actions">
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">✏️ Edit</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">🔍 Test</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">👁️ Preview</button>
+                    </div>
+                </div>
+                
+                <div class="element-card">
+                    <div class="element-header">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" checked>
+                            <span class="element-name">🛒 Cart Icon</span>
+                        </div>
+                        <span class="confidence-badge confidence-high">90% Confidence</span>
+                    </div>
+                    <div class="element-details">
+                        Type: Link | Location: Header Navigation
+                    </div>
+                    <div class="element-selector">
+                        Primary: .cart-icon
+                    </div>
+                    <div class="element-selector">
+                        Fallback: a[href="/cart"]
+                    </div>
+                    <div class="element-actions">
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">✏️ Edit</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">🔍 Test</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">👁️ Preview</button>
+                    </div>
+                </div>
+                
+                <div class="element-card">
+                    <div class="element-header">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox">
+                            <span class="element-name">📋 Product Card</span>
+                        </div>
+                        <span class="confidence-badge confidence-medium">78% Confidence</span>
+                    </div>
+                    <div class="element-details">
+                        Type: Container | Location: Main Content
+                    </div>
+                    <div class="element-selector">
+                        Primary: .product-card
+                    </div>
+                    <div class="element-selector">
+                        Fallback: div[data-product-id]
+                    </div>
+                    <div class="element-actions">
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">✏️ Edit</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">🔍 Test</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">👁️ Preview</button>
+                    </div>
+                </div>
+                
+                <div class="element-card">
+                    <div class="element-header">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" checked>
+                            <span class="element-name">➕ Add to Cart Button</span>
+                        </div>
+                        <span class="confidence-badge confidence-high">94% Confidence</span>
+                    </div>
+                    <div class="element-details">
+                        Type: Button | Location: Product Card
+                    </div>
+                    <div class="element-selector">
+                        Primary: button.add-to-cart
+                    </div>
+                    <div class="element-selector">
+                        Fallback: button[data-action="add-to-cart"]
+                    </div>
+                    <div class="element-actions">
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">✏️ Edit</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">🔍 Test</button>
+                        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">👁️ Preview</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: #e3f2fd; padding: 1rem; border-radius: 8px; margin-top: 2rem;">
+            <strong>💡 Tip:</strong> AI detection uses machine learning to identify elements based on their visual appearance, structure, and common patterns. Review and adjust selectors before importing.
+        </div>
+    </main>
+</body>
+</html>

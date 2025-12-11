@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDFE Screen Mockups - Navigation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+        }
+        
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .card-description {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-features {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-features li {
+            padding: 0.5rem 0;
+            color: #34495e;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card-features li:before {
+            content: "✓";
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .card-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .card:hover .card-button {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 3rem;
+            opacity: 0.8;
+        }
+        
+        .info-box {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            padding: 1.5rem;
+            color: white;
+            margin-top: 2rem;
+        }
+        
+        .info-box h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .info-box ul {
+            list-style: none;
+            line-height: 1.8;
+        }
+        
+        .info-box li:before {
+            content: "→ ";
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 DDFE Screen Mockups</h1>
+            <p>AI Test Automation Platform - Element Repository Management</p>
+        </div>
+        
+        <div class="cards-grid">
+            <a href="00-dashboard.html" class="card">
+                <div class="card-icon">🏠</div>
+                <div class="card-title">Dashboard</div>
+                <div class="card-description">
+                    Main dashboard with overview metrics, recent activity, and quick actions.
+                </div>
+                <ul class="card-features">
+                    <li>Key metrics overview</li>
+                    <li>Recent activity feed</li>
+                    <li>Quick action buttons</li>
+                    <li>System health status</li>
+                </ul>
+                <div class="card-button">View Dashboard →</div>
+            </a>
+            
+            <a href="01-element-browser.html" class="card">
+                <div class="card-icon">📁</div>
+                <div class="card-title">Element Repository Browser</div>
+                <div class="card-description">
+                    Browse and manage all UI elements across applications and pages with an intuitive tree structure.
+                </div>
+                <ul class="card-features">
+                    <li>Hierarchical application tree</li>
+                    <li>Element cards with key info</li>
+                    <li>Search and filter capabilities</li>
+                    <li>Quick actions and bulk operations</li>
+                </ul>
+                <div class="card-button">View Browser →</div>
+            </a>
+            
+            <a href="02-element-editor.html" class="card">
+                <div class="card-icon">✏️</div>
+                <div class="card-title">Element Editor</div>
+                <div class="card-description">
+                    Create and edit UI elements with comprehensive forms and AI-powered suggestions.
+                </div>
+                <ul class="card-features">
+                    <li>Detailed element configuration</li>
+                    <li>Multiple selector support</li>
+                    <li>Real-time validation</li>
+                    <li>AI-powered recommendations</li>
+                </ul>
+                <div class="card-button">View Editor →</div>
+            </a>
+            
+            <a href="03-element-analytics.html" class="card">
+                <div class="card-icon">📊</div>
+                <div class="card-title">Element Analytics</div>
+                <div class="card-description">
+                    Visualize element usage, health metrics, and performance data with interactive dashboards.
+                </div>
+                <ul class="card-features">
+                    <li>Usage trends and statistics</li>
+                    <li>Health distribution charts</li>
+                    <li>Failure analysis</li>
+                    <li>AI-generated recommendations</li>
+                </ul>
+                <div class="card-button">View Analytics →</div>
+            </a>
+            
+            <a href="04-application-management.html" class="card">
+                <div class="card-icon">📱</div>
+                <div class="card-title">Application Management</div>
+                <div class="card-description">
+                    Manage applications and their configurations with comprehensive overview cards.
+                </div>
+                <ul class="card-features">
+                    <li>Application overview cards</li>
+                    <li>Status indicators</li>
+                    <li>Quick actions per app</li>
+                    <li>Statistics dashboard</li>
+                </ul>
+                <div class="card-button">View Apps →</div>
+            </a>
+            
+            <a href="05-page-management.html" class="card">
+                <div class="card-icon">📄</div>
+                <div class="card-title">Page Management</div>
+                <div class="card-description">
+                    Organize and manage pages within applications with visual previews.
+                </div>
+                <ul class="card-features">
+                    <li>Page listing with screenshots</li>
+                    <li>Status management</li>
+                    <li>Element counts and stats</li>
+                    <li>Page-specific actions</li>
+                </ul>
+                <div class="card-button">View Pages →</div>
+            </a>
+            
+            <a href="06-element-history.html" class="card">
+                <div class="card-icon">📜</div>
+                <div class="card-title">Element History</div>
+                <div class="card-description">
+                    Track changes and version history for elements with timeline view.
+                </div>
+                <ul class="card-features">
+                    <li>Timeline view of changes</li>
+                    <li>Change tracking with diffs</li>
+                    <li>User attribution</li>
+                    <li>Revert functionality</li>
+                </ul>
+                <div class="card-button">View History →</div>
+            </a>
+            
+            <a href="07-ai-element-detection.html" class="card">
+                <div class="card-icon">🤖</div>
+                <div class="card-title">AI Element Detection</div>
+                <div class="card-description">
+                    AI-powered element detection and smart suggestions for automation.
+                </div>
+                <ul class="card-features">
+                    <li>Automatic element discovery</li>
+                    <li>Smart selector generation</li>
+                    <li>Confidence scoring</li>
+                    <li>Bulk import capabilities</li>
+                </ul>
+                <div class="card-button">View AI Detection →</div>
+            </a>
+        </div>
+        
+        <div class="info-box">
+            <h3>💡 About These Mockups</h3>
+            <ul>
+                <li>These are interactive HTML mockups based on the DDFE design specifications</li>
+                <li>They replace direct database entry with user-friendly interfaces</li>
+                <li>All screens are fully styled and demonstrate the complete user experience</li>
+                <li>Navigation between screens is functional - click around to explore!</li>
+                <li>Designed for the AI Test Automation Platform element repository management</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>Created for AI Test Automation Platform | DDFE (Data-Driven Frontend Engineering)</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">Click any card above to view the mockup</p>
+        </div>
+    </div>
+</body>
+</html>

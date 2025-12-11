@@ -1,0 +1,120 @@
+# RAPTOR Framework - Default Configuration
+# This file contains default settings that apply to all environments
+
+# Browser Configuration
+browser:
+  type: chromium  # chromium, firefox, or webkit
+  headless: false
+  slow_mo: 0  # Slow down operations by specified milliseconds
+  args:
+    - --start-maximized
+  viewport:
+    width: 1920
+    height: 1080
+  ignore_https_errors: false
+  downloads_path: ./downloads
+
+# Timeout Configuration (in milliseconds)
+timeouts:
+  default: 20000  # Default timeout for most operations
+  element: 20000  # Element location timeout
+  page: 30000     # Page load timeout
+  network: 30000  # Network idle timeout
+  navigation: 30000  # Navigation timeout
+
+# Element Location Configuration
+element_location:
+  retry_attempts: 3
+  retry_delay: 1000  # milliseconds
+  wait_for_stable: true
+  stable_timeout: 100  # milliseconds
+
+# Synchronization Configuration
+synchronization:
+  wait_for_load_state: domcontentloaded  # load, domcontentloaded, networkidle
+  wait_for_spinner: true
+  spinner_timeout: 30000
+  wait_for_disabled_pane: true
+
+# Screenshot Configuration
+screenshots:
+  enabled: true
+  on_failure: true
+  full_page: false
+  path: ./screenshots
+  format: png  # png or jpeg
+  quality: 90  # for jpeg only
+
+# Logging Configuration
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: ./logs/raptor.log
+  console_output: true
+  file_output: true
+  max_file_size: 10485760  # 10MB
+  backup_count: 5
+
+# Reporting Configuration
+reporting:
+  enabled: true
+  format: html  # html, json, xml
+  path: ./reports
+  include_screenshots: true
+  include_logs: true
+
+# Session Management Configuration
+session:
+  enabled: true
+  storage_path: ./sessions
+  auto_cleanup: true
+  max_age_hours: 24
+
+# Database Configuration (defaults - override in environment files)
+database:
+  type: sqlserver  # sqlserver or access
+  host: localhost
+  port: 1433
+  user: ""
+  password: ""
+  database: ""
+  connection_timeout: 30
+  pool_size: 5
+  pool_recycle: 3600
+
+# Test Execution Configuration
+test_execution:
+  parallel: false
+  max_workers: 4
+  retry_failed: false
+  retry_count: 1
+  continue_on_failure: true
+
+# DDFE Configuration
+ddfe:
+  enabled: true
+  cache_elements: true
+  cache_ttl: 3600  # seconds
+
+# DDDB Configuration
+dddb:
+  enabled: true
+  auto_import: true
+  auto_export: true
+
+# ALM Integration
+alm:
+  enabled: false
+  url: ""
+  username: ""
+  password: ""
+  domain: ""
+  project: ""
+
+# JIRA Integration
+jira:
+  enabled: false
+  url: ""
+  username: ""
+  api_token: ""
+  project_key: ""

@@ -1,0 +1,69 @@
+# RAPTOR Framework - Production Environment Configuration
+
+# Browser Configuration
+browser:
+  headless: true  # Always run headless in production
+  slow_mo: 0
+
+# Timeout Configuration
+timeouts:
+  default: 20000
+  element: 20000
+  page: 30000
+
+# Logging Configuration
+logging:
+  level: WARNING  # Only warnings and errors in production
+  console_output: false
+  file_output: true
+
+# Screenshot Configuration
+screenshots:
+  enabled: true
+  on_failure: true  # Only capture on failure
+  full_page: false
+
+# Database Configuration
+database:
+  host: prod-db.example.com
+  port: 1433
+  database: DDFE_Production
+  user: prod_user
+  # Password should be set via environment variable RAPTOR_DB_PASSWORD
+  connection_timeout: 15
+  pool_size: 10
+
+# Test Execution Configuration
+test_execution:
+  parallel: true
+  max_workers: 4
+  retry_failed: true
+  retry_count: 1
+  continue_on_failure: true
+
+# Session Management
+session:
+  auto_cleanup: true
+  max_age_hours: 12
+
+# Reporting Configuration
+reporting:
+  enabled: true
+  include_screenshots: true
+  include_logs: false  # Don't include verbose logs in prod reports
+  path: ./reports/prod
+
+# ALM Integration
+alm:
+  enabled: true
+  url: https://alm.example.com
+  domain: PRODUCTION
+  project: RAPTOR_Tests
+  # Username and password via environment variables
+
+# JIRA Integration
+jira:
+  enabled: true
+  url: https://jira.example.com
+  project_key: RAPTOR
+  # Username and API token via environment variables

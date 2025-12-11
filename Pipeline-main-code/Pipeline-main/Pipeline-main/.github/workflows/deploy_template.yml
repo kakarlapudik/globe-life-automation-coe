@@ -1,0 +1,76 @@
+name: Deploy Infrastructure
+#deploy
+on:
+  push:
+    branches:
+      - main_branch # main branch for the pipeline trigger deploy
+  workflow_dispatch:
+
+permissions:
+  deployments: write
+  statuses: write
+  contents: write
+  id-token: write
+  actions: write
+  checks: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: 
+      - self-hosted
+    steps:
+      - name: Checkout Pipeline Code
+        id: checkout
+        uses: GlobeLifeAppDev/actions-checkout-v4@main
+        continue-on-error: false
+      
+      - name: Repo Name
+        id: repoName
+        if: success()
+        run: |
+         $repoName = "${{ github.event.repository.name }}".Substring(0, [Math]::Min(10, "${{ github.event.repository.name }}".Length))
+         echo "REPO_NAME=$repoName" >> $env:GITHUB_ENV
+         Write-Output "Environment variable set: REPO_NAME=$repoName"
+        continue-on-error: false
+
+      - name: Deploy CDK Infrastructure (API)
+        id: dependency-deploy-api # reference steps and track failures.
+        if: success()   
+        uses: GlobeLifeAppDev/Pipeline@v1.0.1
+        with: 
+          dev-account: '000000000000' # Account ID of the source account where the pipeline and application stacks are deployed.  
+#          tst-account: '000000000000' # Account ID of the test target account where application stack is deployed.
+          stg-account: '000000000000' # Account ID of the stage target account where application stack is deployed.
+          prd-account: '000000000000' # Account ID of the production target account where application stack is deployed.
+          app-name: 'FeatureV4'  # Appname must be an alphanumeric identifier of at most 10 characters.
+          stack-id: 'ApiStack' # Stack id must be a unique alphanumeric  identifier of at most 10 characters.Ex: 'Api', 'ui', 'Services'
+          app-dir: '${{ github.workspace }}/ApplicationStackCodeAPI'  # Point to the specific CDK App code directory to deploy. The directory must contain a cdk.json file.
+          permissions-boundary: 'Boundary_CICDPipeline' # permissions boundary that allow the pipeline to assume roles in the target accounts
+          role-to-assume: 'arn:aws:iam::000000000000:role/GitHub_AccessRole' # Role to assume in the source account to deploy the pipeline
+          platform: 'typescript' # Specify the platform for the application {.net, python, typescript}        
+          cross-account-boundary: 'Boundary_CICDPipeline' # boundary policy for bootstrapping in target accounts, all should match
+          approval-notification: 'xxxxx@globe.life' # request for approval email/dist list
+          action-type: 'deploy' # deploy to create stack, destroy to remove stack, default is deploy
+        continue-on-error: false # Stop the workflow if the step fails
+        
+  #    - name: Deploy CDK Infrastructure (UI)
+  #      id: dependent-deploy-ui # reference steps and track failures.
+  #      if: success()
+  #      uses: GlobeLifeAppDev/PipelinePOC@CICD_Enterprise_Kentico
+  #      with: 
+  #        dev-account: '000000000000' # Account ID of the source account where the pipeline and application stacks are deployed.
+  #        tst-account: '000000000000' # Account ID of the test target account where application stack is deployed.
+  #        #stg-account: '000000000000' # Account ID of the stage target account where application stack is deployed.
+  #        #prd-account: '000000000000' # Account ID of the production target account where application stack is deployed.
+  #        app-name: 'TestApp' # Appname must be an alphanumeric identifier of at most 10 characters.
+  #        stack-id: 'UIStack' # Stack id must be a unique alphanumeric  identifier of at most 10 characters.Ex: 'Api', 'ui', 'Services'
+  #        app-dir: '${{ github.workspace }}/ApplicationStackCodeUI'  # Point to the specific CDK App code directory to deploy. The directory must contain a cdk.json file.
+  #        permissions-boundary: 'Boundary_CICDPipeline' # permissions boundary that allow the pipeline to assume roles in the target accounts
+  #        role-to-assume: 'arn:aws:iam::000000000000:role/GitHub_AccessRole' # Role to assume in the source account to deploy the pipeline
+  #        platform: 'typescript' # Specify the platform for the application {.net, python, typescript}  
+  #        cross-account-boundary: 'Boundary_KenticoPipeline' # boundary policy for bootstrapping in target accounts, all should match
+  #        approval-notification: 'tpbolin@globe.life' # request for approval email/dist list
+  #        action-type: '' # deploy to create stack, destroy to remove stack, default is deploy   
+  #      continue-on-error: false # Stop the workflow if the step fails

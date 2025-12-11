@@ -1,0 +1,59 @@
+# RAPTOR Framework - Staging Environment Configuration
+
+# Browser Configuration
+browser:
+  headless: true  # Run headless in staging
+  slow_mo: 0
+
+# Timeout Configuration
+timeouts:
+  default: 25000
+  element: 25000
+  page: 45000
+
+# Logging Configuration
+logging:
+  level: INFO
+  console_output: true
+  file_output: true
+
+# Screenshot Configuration
+screenshots:
+  enabled: true
+  on_failure: true
+  full_page: false
+
+# Database Configuration
+database:
+  host: staging-db.example.com
+  port: 1433
+  database: DDFE_Staging
+  user: staging_user
+  # Password should be set via environment variable RAPTOR_DB_PASSWORD
+
+# Test Execution Configuration
+test_execution:
+  parallel: true
+  max_workers: 2
+  retry_failed: true
+  retry_count: 1
+
+# Session Management
+session:
+  auto_cleanup: true
+  max_age_hours: 24
+
+# Reporting Configuration
+reporting:
+  enabled: true
+  include_screenshots: true
+  include_logs: true
+  path: ./reports/staging
+
+# ALM Integration
+alm:
+  enabled: true
+  url: https://alm-staging.example.com
+  domain: STAGING
+  project: RAPTOR_Tests
+  # Username and password via environment variables

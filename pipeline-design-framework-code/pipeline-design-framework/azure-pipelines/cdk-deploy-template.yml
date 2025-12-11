@@ -1,0 +1,249 @@
+# CDK Deployment Template
+# Reusable Azure Pipeline template for CDK deployments
+# Version: 1.0.0
+
+parameters:
+  - name: appName
+    type: string
+    displayName: 'Application Name'
+  
+  - name: stackId
+    type: string
+    displayName: 'Stack ID'
+  
+  - name: appDir
+    type: string
+    default: './'
+    displayName: 'Application Directory'
+  
+  - name: permissionsBoundary
+    type: string
+    displayName: 'IAM Permissions Boundary ARN'
+  
+  - name: awsServiceConnection
+    type: string
+    displayName: 'AWS Service Connection Name'
+  
+  - name: platform
+    type: string
+    default: 'python'
+    values:
+      - python
+      - typescript
+      - dotnet
+    displayName: 'CDK Platform'
+  
+  - name: nodeVersion
+    type: string
+    default: '20'
+    displayName: 'Node.js Version'
+  
+  - name: cdkDefaultRegion
+    type: string
+    default: 'us-west-2'
+    displayName: 'CDK Default Region'
+  
+  - name: actionType
+    type: string
+    default: 'deploy'
+    values:
+      - deploy
+      - destroy
+    displayName: 'Action Type'
+  
+  - name: approvalNotification
+    type: string
+    default: ''
+    displayName: 'Approval SNS Topic ARN (optional)'
+
+jobs:
+  - job: CDKDeployment
+    displayName: 'CDK ${{ parameters.actionType }} - ${{ parameters.appName }}'
+    timeoutInMinutes: 60
+    
+    steps:
+      - checkout: self
+        displayName: 'Checkout Source Code'
+      
+      - checkout: pipeline-framework
+        displayName: 'Checkout Pipeline Framework'
+      
+      # Parameter Validation
+      - task: PowerShell@2
+        displayName: 'Validate Parameters'
+        inputs:
+          targetType: 'inline'
+          script: |
+            Write-Host "Validating required parameters..."
+            $requiredParams = @{
+              'appName' = '${{ parameters.appName }}'
+              'stackId' = '${{ parameters.stackId }}'
+              'permissionsBoundary' = '${{ parameters.permissionsBoundary }}'
+              'awsServiceConnection' = '${{ parameters.awsServiceConnection }}'
+            }
+            
+            $missingParams = @()
+            foreach ($param in $requiredParams.GetEnumerator()) {
+              if ([string]::IsNullOrWhiteSpace($param.Value)) {
+                $missingParams += $param.Key
+              }
+            }
+            
+            if ($missingParams.Count -gt 0) {
+              Write-Error "Missing required parameters: $($missingParams -join ', ')"
+              exit 1
+            }
+            
+            Write-Host "✅ All required parameters provided"
+            Write-Host "App Name: ${{ parameters.appName }}"
+            Write-Host "Stack ID: ${{ parameters.stackId }}"
+            Write-Host "Platform: ${{ parameters.platform }}"
+            Write-Host "Action: ${{ parameters.actionType }}"
+      
+      # Environment Setup
+      - task: NodeTool@0
+        displayName: 'Setup Node.js ${{ parameters.nodeVersion }}'
+        inputs:
+          versionSpec: '${{ parameters.nodeVersion }}'
+      
+      - task: UsePythonVersion@0
+        displayName: 'Setup Python 3.9'
+        inputs:
+          versionSpec: '3.9'
+          addToPath: true
+        condition: eq('${{ parameters.platform }}', 'python')
+      
+      - task: DotNetCoreCLI@2
+        displayName: 'Setup .NET Core'
+        inputs:
+          command: 'custom'
+          custom: '--version'
+        condition: eq('${{ parameters.platform }}', 'dotnet')
+      
+      # Install Dependencies
+      - script: |
+          npm install -g aws-cdk@latest
+          cdk --version
+        displayName: 'Install AWS CDK CLI'
+      
+      - script: |
+          cd "${{ parameters.appDir }}"
+          pip install -r requirements.txt
+        displayName: 'Install Python Dependencies'
+        condition: eq('${{ parameters.platform }}', 'python')
+      
+      - script: |
+          cd "${{ parameters.appDir }}"
+          npm install
+        displayName: 'Install Node.js Dependencies'
+        condition: eq('${{ parameters.platform }}', 'typescript')
+      
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore .NET Dependencies'
+        inputs:
+          command: 'restore'
+          projects: '${{ parameters.appDir }}/**/*.csproj'
+        condition: eq('${{ parameters.platform }}', 'dotnet')
+      
+      # AWS Authentication
+      - task: AWSShellScript@1
+        displayName: 'Configure AWS Credentials'
+        inputs:
+          awsCredentials: '${{ parameters.awsServiceConnection }}'
+          regionName: '${{ parameters.cdkDefaultRegion }}'
+          scriptType: 'inline'
+          inlineScript: |
+            echo "AWS CLI Version:"
+            aws --version
+            echo "Current AWS Identity:"
+            aws sts get-caller-identity
+            echo "✅ AWS credentials configured successfully"
+      
+      # CDK Bootstrap (if needed)
+      - task: AWSShellScript@1
+        displayName: 'CDK Bootstrap'
+        inputs:
+          awsCredentials: '${{ parameters.awsServiceConnection }}'
+          regionName: '${{ parameters.cdkDefaultRegion }}'
+          scriptType: 'inline'
+          inlineScript: |
+            cd "${{ parameters.appDir }}"
+            
+            # Set environment variables
+            export CDK_DEFAULT_REGION="${{ parameters.cdkDefaultRegion }}"
+            export PERMISSIONS_BOUNDARY="${{ parameters.permissionsBoundary }}"
+            export APP_NAME="${{ parameters.appName }}"
+            export STACK_ID="${{ parameters.stackId }}"
+            
+            echo "Checking CDK bootstrap status..."
+            cdk bootstrap --require-approval never
+            echo "✅ CDK bootstrap completed"
+      
+      # CDK Deployment/Destruction
+      - task: AWSShellScript@1
+        displayName: 'CDK ${{ parameters.actionType }}'
+        inputs:
+          awsCredentials: '${{ parameters.awsServiceConnection }}'
+          regionName: '${{ parameters.cdkDefaultRegion }}'
+          scriptType: 'inline'
+          inlineScript: |
+            cd "${{ parameters.appDir }}"
+            
+            # Set environment variables
+            export CDK_DEFAULT_REGION="${{ parameters.cdkDefaultRegion }}"
+            export PERMISSIONS_BOUNDARY="${{ parameters.permissionsBoundary }}"
+            export APP_NAME="${{ parameters.appName }}"
+            export STACK_ID="${{ parameters.stackId }}"
+            
+            echo "Starting CDK ${{ parameters.actionType }}..."
+            echo "Working Directory: $(pwd)"
+            echo "Environment Variables:"
+            echo "  CDK_DEFAULT_REGION: $CDK_DEFAULT_REGION"
+            echo "  APP_NAME: $APP_NAME"
+            echo "  STACK_ID: $STACK_ID"
+            
+            # List available stacks
+            echo "Available CDK stacks:"
+            cdk list
+            
+            # Execute CDK command
+            if [ "${{ parameters.actionType }}" = "deploy" ]; then
+              echo "🚀 Deploying CDK stacks..."
+              cdk deploy --all --require-approval never --verbose
+            elif [ "${{ parameters.actionType }}" = "destroy" ]; then
+              echo "🗑️ Destroying CDK stacks..."
+              cdk destroy --all --force --verbose
+            fi
+            
+            echo "✅ CDK ${{ parameters.actionType }} completed successfully"
+      
+      # Send Approval Notification (if configured)
+      - task: AWSShellScript@1
+        displayName: 'Send Deployment Notification'
+        condition: and(succeeded(), ne('${{ parameters.approvalNotification }}', ''))
+        inputs:
+          awsCredentials: '${{ parameters.awsServiceConnection }}'
+          regionName: '${{ parameters.cdkDefaultRegion }}'
+          scriptType: 'inline'
+          inlineScript: |
+            echo "Sending deployment notification..."
+            MESSAGE="CDK ${{ parameters.actionType }} completed successfully for ${{ parameters.appName }}-${{ parameters.stackId }}"
+            SUBJECT="CDK Deployment Notification - ${{ parameters.appName }}"
+            
+            aws sns publish \
+              --topic-arn "${{ parameters.approvalNotification }}" \
+              --subject "$SUBJECT" \
+              --message "$MESSAGE"
+            
+            echo "✅ Notification sent to SNS topic"
+      
+      # Cleanup
+      - task: PowerShell@2
+        displayName: 'Cleanup Temporary Files'
+        condition: always()
+        inputs:
+          targetType: 'inline'
+          script: |
+            Write-Host "Cleaning up temporary files..."
+            # Add any cleanup logic here
+            Write-Host "✅ Cleanup completed"

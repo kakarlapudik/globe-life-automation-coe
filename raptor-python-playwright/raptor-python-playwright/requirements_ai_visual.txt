@@ -1,0 +1,29 @@
+# AI Visual Automation Dependencies for RAPTOR Framework
+# Install with: pip install -r requirements_ai_visual.txt
+
+# Core Computer Vision
+opencv-python-headless>=4.8.0,<5.0.0
+pytesseract>=0.3.10,<1.0.0
+numpy>=1.24.0,<2.0.0
+Pillow>=10.0.0,<11.0.0
+scikit-image>=0.21.0,<1.0.0
+
+# Image Processing
+scipy>=1.11.0,<2.0.0
+
+# Optional: Advanced ML Models
+# tensorflow>=2.13.0,<3.0.0
+# torch>=2.0.0,<3.0.0
+# torchvision>=0.15.0,<1.0.0
+
+# Optional: Cloud AI Services
+# boto3>=1.28.0  # AWS Rekognition
+# google-cloud-vision>=3.4.0  # Google Cloud Vision
+# azure-cognitiveservices-vision-computervision>=0.9.0  # Azure Computer Vision
+
+# Existing RAPTOR dependencies (if not already installed)
+playwright>=1.40.0
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pyyaml>=6.0
+python-dotenv>=1.0.0

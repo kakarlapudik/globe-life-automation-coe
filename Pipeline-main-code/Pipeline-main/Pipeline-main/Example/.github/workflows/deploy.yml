@@ -1,0 +1,60 @@
+# GitHub Actions workflow for automated CDK infrastructure deployment
+# Supports multi-account deployment with approval gates and security boundaries
+name: Deploy Infrastructure
+
+# Workflow triggers
+on:
+  push:
+    branches:
+      - main # Trigger deployment on push to main branch
+  workflow_dispatch: # Allow manual workflow execution from GitHub UI
+  
+# Required GitHub token permissions for CDK deployment workflow
+permissions:
+  deployments: write     # Create deployment status
+  statuses: write        # Update commit status
+  contents: write        # Access repository content
+  id-token: write        # OIDC token for AWS authentication
+  actions: write         # Manage workflow runs
+  checks: write          # Create check runs
+  packages: write        # Access packages if needed
+  pull-requests: write   # Comment on PRs
+
+jobs:
+  deploy:
+    # Use self-hosted runner for secure access to internal resources
+    runs-on: 
+      - self-hosted
+    steps:
+      # Step 1: Checkout repository code including CDK application
+      - name: Checkout Pipeline Code
+        id: checkout
+        uses: GlobeLifeAppDev/actions-checkout-v4@main # Custom checkout action
+        continue-on-error: false # Fail workflow if checkout fails
+
+      # Step 2: Deploy CDK infrastructure using custom pipeline action
+      - name: Deploy CDK Infrastructure (API)
+        id: dependency-deploy-api # Unique step ID for referencing and failure tracking
+        if: success() # Only run if previous steps succeeded
+        uses: GlobeLifeAppDev/Pipeline@v1.0.1 # Custom pipeline action for CDK deployment
+        with: 
+          # AWS account configuration for multi-account deployment strategy
+          dev-account: '090857669145' # Development account - source account for pipeline
+          tst-account: '099407892525' # Test account - automated testing environment
+          # stg-account: '099407892525' # Staging account - pre-production (commented out)
+          prd-account: '276291855933' # Production account - live environment
+          # Application and stack identification (max 10 alphanumeric characters each)
+          app-name: 'AppGL'  # Application name for grouping related stacks
+          stack-id: 'ApiGL'  # Stack identifier for this specific component (API layer)
+          # CDK application configuration
+          app-dir: '${{ github.workspace }}/ApplicationStackCodeAPI'  # Path to CDK app (must contain cdk.json)
+          # Security and access configuration
+          permissions-boundary: 'Boundary_CICDPipeline' # IAM boundary for pipeline role permissions
+          role-to-assume: 'arn:aws:iam::946869377993:role/GitHub_AccessRole' # OIDC role for GitHub authentication
+          # Platform and cross-account security configuration
+          platform: 'typescript' # CDK platform (.net, python, typescript)
+          cross-account-boundary: 'Boundary_CICDPipeline' # IAM boundary for target account resources
+          # Deployment configuration and notifications
+          approval-notification: 'ojorge@globe.life' # Email for production deployment approvals
+          action-type: 'deploy' # Action: 'deploy' (create/update) or 'destroy' (remove stack)
+        continue-on-error: false # Fail workflow immediately if deployment fails

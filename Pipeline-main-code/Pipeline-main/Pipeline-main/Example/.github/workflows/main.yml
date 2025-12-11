@@ -1,0 +1,92 @@
+name: Deploy code
+
+on:
+  push:
+    branches:
+    - CICD_Enterprise_V2
+    
+  workflow_dispatch:
+
+permissions:
+  deployments: write
+  statuses: write
+  contents: write
+  id-token: write
+  actions: write
+  checks: write
+  packages: write
+  pull-requests: write
+
+env:
+  DOTNET_INSTALL_DIR: '.\.dotnet'
+  
+jobs:
+  build_cdk:
+    runs-on: 
+      - self-hosted
+            
+    steps:
+      - uses: GlobeLifeAppDev/actions-checkout-v4@main
+
+      # Log deployment ID for debugging
+      - name: Debug Deployment ID
+        run: echo "Deployment ID is ${{ steps.create_deployment.outputs.deployment_id }}"
+
+      - name: Set up Node
+        uses: GlobeLifeAppDev/actions-setup-node-v4.0.3@main
+        with:
+          node-version: '20'
+
+      - name: Set environment variables
+        run: |
+          $env:CDK_DEFAULT_REGION="us-west-2"
+          $env:CDK_DEFAULT_ACCOUNT="992382406065"
+          $env:TST_ACCOUNT= "992382529126"
+          $env:STG_ACCOUNT= "767397756102"
+          $env:PRD_ACCOUNT= "339712837931"
+          $env:APP_NAME= "AppEnt"
+          $env:APP_DIR= "App"
+          $env:PERMISSIONS_BOUNDARY= "Boundary_Pipeline"
+          
+          "CDK_DEFAULT_ACCOUNT=$($env:CDK_DEFAULT_ACCOUNT)" >> $env:GITHUB_ENV
+          "TST_ACCOUNT=$($env:TST_ACCOUNT)" >> $env:GITHUB_ENV
+          "STG_ACCOUNT=$($env:STG_ACCOUNT)" >> $env:GITHUB_ENV
+          "PRD_ACCOUNT=$($env:PRD_ACCOUNT)" >> $env:GITHUB_ENV
+          "APP_NAME=$($env:APP_NAME)" >> $env:GITHUB_ENV
+          "APP_DIR=$($env:APP_DIR)" >> $env:GITHUB_ENV
+          "PERMISSIONS_BOUNDARY=$($env:PERMISSIONS_BOUNDARY)" >> $env:GITHUB_ENV
+          "CDK_DEFAULT_REGION=$($env:CDK_DEFAULT_REGION)" >> $env:GITHUB_ENV
+
+
+      - name: Install Dependencies
+        working-directory: ./PipelineStack/
+        run: |
+           npm install -g aws-cdk
+           npm install           
+
+      - uses: GlobeLifeAppDev/actions-upload-artifact-v4@main
+        with:
+          name: artifacts
+          path: |
+                bin/**
+                **/cdk.out/**
+                lib/**
+
+      - name: Configure AWS credentials
+        uses: GlobeLifeAppDev/aws-actions-configure-aws-credentials-v4@main
+        with:
+          role-to-assume: arn:aws:iam::${{ env.CDK_DEFAULT_ACCOUNT }}:role/GitHub_AccessRole
+          #role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
+          aws-region: "us-west-2"
+          
+      - name: Deploy to AWS
+        working-directory: ./PipelineStack/
+        id: deploy
+        run: |
+          cdk bootstrap "aws://${{ env.CDK_DEFAULT_ACCOUNT }}/${{ env.CDK_DEFAULT_REGION }}" --toolkit-stack-name CDKToolkit${{ env.APP_NAME }} --custom-permissions-boundary ${{ env.PERMISSIONS_BOUNDARY }} --cloudformation-execution-policies "arn:aws:iam::aws:policy/AdministratorAccess,arn:aws:iam::aws:policy/CloudWatchFullAccessV2,arn:aws:iam::aws:policy/AmazonSNSFullAccess,arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess,arn:aws:iam::aws:policy/AWSCodeDeployFullAccess,arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess,arn:aws:iam::aws:policy/AWSLambda_FullAccess,arn:aws:iam::${{ env.CDK_DEFAULT_ACCOUNT }}:policy/GitHubActions_Permissions" --qualifier $("${{ env.APP_NAME }}".ToLower())
+          cdk deploy PipelineStack${{ env.APP_NAME }} --require-approval never   
+      
+      # cdk deploy PipelineStack${{ env.APP_NAME }} --require-approval never   
+      # cdk destroy PipelineStack${{ env.APP_NAME }} --force --require-approval never
+
+      

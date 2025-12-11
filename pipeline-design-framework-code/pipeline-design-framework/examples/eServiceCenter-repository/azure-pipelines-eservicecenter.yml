@@ -1,0 +1,424 @@
+# eServiceCenter V2 Test Automation Pipeline
+# Modern Azure Pipeline configuration for Java/Maven/TestNG test automation
+# 
+# This pipeline demonstrates best practices for test automation CI/CD:
+# - Multi-stage pipeline with build, test, and security scanning
+# - Support for multiple test suites (Smoke, Regression, API, UI)
+# - Artifact publishing for test reports
+# - Security scanning integration
+# - Environment-specific configuration
+
+name: eServiceCenter-V2-$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - feature/*
+  paths:
+    exclude:
+      - README.md
+      - docs/*
+      - '*.md'
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    exclude:
+      - README.md
+      - docs/*
+
+# Variable groups contain sensitive configuration
+# Create in Azure DevOps: Pipelines > Library > Variable groups
+variables:
+  - group: eservicecenter-v2-variables
+  
+  # Build configuration
+  - name: mavenVersion
+    value: '3.8.x'
+  - name: jdkVersion
+    value: '11'  # Changed from 1.8 to match pom.xml requirements
+  - name: mavenOptions
+    value: '-Xmx3072m -Dmaven.test.failure.ignore=false'
+  
+  # Test configuration
+  - name: testEnvironment
+    value: 'QA'
+  - name: parallelThreads
+    value: '1'
+  
+  # Artifact paths
+  - name: testOutputPath
+    value: '$(System.DefaultWorkingDirectory)/test-output'
+  - name: surefireReportsPath
+    value: '$(System.DefaultWorkingDirectory)/target/surefire-reports'
+
+stages:
+  # ============================================================================
+  # STAGE 1: BUILD
+  # ============================================================================
+  - stage: Build
+    displayName: 'Build & Compile'
+    jobs:
+      - job: CompileCode
+        displayName: 'Maven Compile'
+        pool:
+          name: default  # Self-hosted agent pool
+        
+        steps:
+          - checkout: self
+            clean: true
+            fetchDepth: 1
+          
+          - task: Maven@3
+            displayName: 'Maven Clean Compile'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'clean compile'
+              options: '$(mavenOptions)'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '$(jdkVersion)'
+              jdkArchitectureOption: 'x64'
+              mavenVersionOption: 'Default'
+          
+          - task: CopyFiles@2
+            displayName: 'Copy Compiled Classes'
+            inputs:
+              SourceFolder: '$(System.DefaultWorkingDirectory)/target'
+              Contents: '**'
+              TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Build Artifacts'
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/build'
+              artifact: 'build-output'
+              publishLocation: 'pipeline'
+
+  # ============================================================================
+  # STAGE 2: SMOKE TESTS
+  # ============================================================================
+  - stage: SmokeTests
+    displayName: 'Smoke Tests'
+    dependsOn: Build
+    condition: succeeded()
+    
+    jobs:
+      - job: RunSmokeTests
+        displayName: 'Execute Smoke Test Suite'
+        pool:
+          name: default
+        timeoutInMinutes: 60
+        
+        steps:
+          - checkout: self
+            clean: true
+          
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Build Artifacts'
+            inputs:
+              buildType: 'current'
+              artifactName: 'build-output'
+              targetPath: '$(System.DefaultWorkingDirectory)/target'
+          
+          - task: Maven@3
+            displayName: 'Run Smoke Tests'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'test'
+              options: '-P Smoke $(mavenOptions) -DtestEnvironment=$(testEnvironment)'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '$(jdkVersion)'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              testRunTitle: 'Smoke Tests - $(testEnvironment)'
+            continueOnError: true
+          
+          - task: PublishTestResults@2
+            displayName: 'Publish TestNG Results'
+            condition: always()
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              searchFolder: '$(System.DefaultWorkingDirectory)'
+              mergeTestResults: true
+              failTaskOnFailedTests: false
+              testRunTitle: 'Smoke Tests - $(testEnvironment)'
+              buildPlatform: 'Java'
+              buildConfiguration: 'Smoke'
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish ExtentReports'
+            condition: always()
+            inputs:
+              targetPath: '$(testOutputPath)'
+              artifact: 'smoke-test-reports-$(Build.BuildId)'
+              publishLocation: 'pipeline'
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Surefire Reports'
+            condition: always()
+            inputs:
+              targetPath: '$(surefireReportsPath)'
+              artifact: 'smoke-surefire-reports-$(Build.BuildId)'
+              publishLocation: 'pipeline'
+          
+          - script: |
+              echo "##vso[task.setvariable variable=smokeTestsPassed;isOutput=true]true"
+            name: setTestStatus
+            displayName: 'Set Test Status'
+            condition: succeeded()
+
+  # ============================================================================
+  # STAGE 3: REGRESSION TESTS (Conditional - Main branch only)
+  # ============================================================================
+  - stage: RegressionTests
+    displayName: 'Regression Tests'
+    dependsOn: SmokeTests
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    
+    jobs:
+      - job: RunRegressionTests
+        displayName: 'Execute Full Regression Suite'
+        pool:
+          name: default
+        timeoutInMinutes: 180
+        
+        steps:
+          - checkout: self
+            clean: true
+          
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Build Artifacts'
+            inputs:
+              buildType: 'current'
+              artifactName: 'build-output'
+              targetPath: '$(System.DefaultWorkingDirectory)/target'
+          
+          - task: Maven@3
+            displayName: 'Run Regression Tests'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'test'
+              options: '-P Regression $(mavenOptions) -DtestEnvironment=$(testEnvironment) -DparallelThreads=$(parallelThreads)'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '$(jdkVersion)'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              testRunTitle: 'Regression Tests - $(testEnvironment)'
+            continueOnError: true
+          
+          - task: PublishTestResults@2
+            displayName: 'Publish TestNG Results'
+            condition: always()
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              searchFolder: '$(System.DefaultWorkingDirectory)'
+              mergeTestResults: true
+              failTaskOnFailedTests: true
+              testRunTitle: 'Regression Tests - $(testEnvironment)'
+              buildPlatform: 'Java'
+              buildConfiguration: 'Regression'
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish ExtentReports'
+            condition: always()
+            inputs:
+              targetPath: '$(testOutputPath)'
+              artifact: 'regression-test-reports-$(Build.BuildId)'
+              publishLocation: 'pipeline'
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Surefire Reports'
+            condition: always()
+            inputs:
+              targetPath: '$(surefireReportsPath)'
+              artifact: 'regression-surefire-reports-$(Build.BuildId)'
+              publishLocation: 'pipeline'
+
+  # ============================================================================
+  # STAGE 4: API REGRESSION TESTS (Parallel with UI)
+  # ============================================================================
+  - stage: APIRegressionTests
+    displayName: 'API Regression Tests'
+    dependsOn: SmokeTests
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    
+    jobs:
+      - job: RunAPITests
+        displayName: 'Execute API Test Suite'
+        pool:
+          name: default
+        timeoutInMinutes: 90
+        
+        steps:
+          - checkout: self
+            clean: true
+          
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Build Artifacts'
+            inputs:
+              buildType: 'current'
+              artifactName: 'build-output'
+              targetPath: '$(System.DefaultWorkingDirectory)/target'
+          
+          - task: Maven@3
+            displayName: 'Run API Regression Tests'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'test'
+              options: '-Dsurefire.suiteXmlFiles=RegressionAPI.xml $(mavenOptions) -DtestEnvironment=$(testEnvironment)'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '$(jdkVersion)'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              testRunTitle: 'API Regression Tests - $(testEnvironment)'
+            continueOnError: true
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish API Test Reports'
+            condition: always()
+            inputs:
+              targetPath: '$(testOutputPath)'
+              artifact: 'api-test-reports-$(Build.BuildId)'
+              publishLocation: 'pipeline'
+
+  # ============================================================================
+  # STAGE 5: UI REGRESSION TESTS (Parallel with API)
+  # ============================================================================
+  - stage: UIRegressionTests
+    displayName: 'UI Regression Tests'
+    dependsOn: SmokeTests
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    
+    jobs:
+      - job: RunUITests
+        displayName: 'Execute UI Test Suite'
+        pool:
+          name: default
+        timeoutInMinutes: 120
+        
+        steps:
+          - checkout: self
+            clean: true
+          
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Build Artifacts'
+            inputs:
+              buildType: 'current'
+              artifactName: 'build-output'
+              targetPath: '$(System.DefaultWorkingDirectory)/target'
+          
+          - task: Maven@3
+            displayName: 'Run UI Regression Tests'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'test'
+              options: '-Dsurefire.suiteXmlFiles=RegressionUI.xml $(mavenOptions) -DtestEnvironment=$(testEnvironment)'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '$(jdkVersion)'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              testRunTitle: 'UI Regression Tests - $(testEnvironment)'
+            continueOnError: true
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish UI Test Reports'
+            condition: always()
+            inputs:
+              targetPath: '$(testOutputPath)'
+              artifact: 'ui-test-reports-$(Build.BuildId)'
+              publishLocation: 'pipeline'
+
+  # ============================================================================
+  # STAGE 6: SECURITY SCANNING (Optional - Enable when Checkmarx is configured)
+  # ============================================================================
+  - stage: SecurityScan
+    displayName: 'Security Scanning'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    
+    jobs:
+      - job: CheckmarxScan
+        displayName: 'Checkmarx SAST Scan'
+        pool:
+          name: default
+        
+        steps:
+          - checkout: self
+            clean: true
+          
+          # Uncomment when Checkmarx is configured
+          # - task: CheckmarxSAST@2023
+          #   displayName: 'Run Checkmarx SAST'
+          #   inputs:
+          #     projectName: 'eServiceCenter_V2'
+          #     preset: 'High and Medium'
+          #     fullScanCycle: 10
+          #     vulnerabilityThreshold: true
+          #     high: 0
+          #     medium: 10
+          #     low: 50
+          
+          - script: |
+              echo "Security scanning stage - Checkmarx integration pending"
+              echo "Configure Checkmarx service connection and uncomment task above"
+            displayName: 'Security Scan Placeholder'
+
+  # ============================================================================
+  # STAGE 7: REPORTING & NOTIFICATIONS
+  # ============================================================================
+  - stage: ReportingAndNotifications
+    displayName: 'Reporting & Notifications'
+    dependsOn:
+      - SmokeTests
+      - RegressionTests
+      - APIRegressionTests
+      - UIRegressionTests
+    condition: always()
+    
+    jobs:
+      - job: GenerateReports
+        displayName: 'Generate Test Summary'
+        pool:
+          name: default
+        
+        steps:
+          - script: |
+              echo "========================================="
+              echo "eServiceCenter V2 Test Execution Summary"
+              echo "========================================="
+              echo "Build ID: $(Build.BuildId)"
+              echo "Build Number: $(Build.BuildNumber)"
+              echo "Source Branch: $(Build.SourceBranch)"
+              echo "Test Environment: $(testEnvironment)"
+              echo "========================================="
+              echo ""
+              echo "Test Reports Available:"
+              echo "- Smoke Tests: smoke-test-reports-$(Build.BuildId)"
+              echo "- Regression Tests: regression-test-reports-$(Build.BuildId)"
+              echo "- API Tests: api-test-reports-$(Build.BuildId)"
+              echo "- UI Tests: ui-test-reports-$(Build.BuildId)"
+              echo ""
+              echo "View detailed reports in Pipeline Artifacts"
+              echo "========================================="
+            displayName: 'Print Test Summary'
+          
+          # Email notification task (configure email service connection)
+          # - task: SendEmail@1
+          #   displayName: 'Send Email Notification'
+          #   condition: always()
+          #   inputs:
+          #     To: '$(EMAIL_RECIPIENTS)'
+          #     From: 'azure-devops@globelife.com'
+          #     Subject: 'eServiceCenter V2 Tests - Build $(Build.BuildNumber)'
+          #     Body: 'Test execution completed. View results at $(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)'

@@ -1,0 +1,362 @@
+# Azure DevOps Pipeline for RAPTOR Python Playwright Framework
+
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+  tags:
+    include:
+    - v*
+
+pr:
+  branches:
+    include:
+    - main
+    - develop
+
+variables:
+  pythonVersion: '3.10'
+  packageName: 'raptor-playwright'
+
+stages:
+- stage: Test
+  displayName: 'Test Stage'
+  jobs:
+  - job: TestMatrix
+    displayName: 'Test on Multiple Platforms'
+    strategy:
+      matrix:
+        Linux_Python38:
+          imageName: 'ubuntu-latest'
+          pythonVersion: '3.8'
+        Linux_Python39:
+          imageName: 'ubuntu-latest'
+          pythonVersion: '3.9'
+        Linux_Python310:
+          imageName: 'ubuntu-latest'
+          pythonVersion: '3.10'
+        Linux_Python311:
+          imageName: 'ubuntu-latest'
+          pythonVersion: '3.11'
+        Windows_Python310:
+          imageName: 'windows-latest'
+          pythonVersion: '3.10'
+        macOS_Python310:
+          imageName: 'macOS-latest'
+          pythonVersion: '3.10'
+    pool:
+      vmImage: $(imageName)
+    
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        playwright install chromium
+      displayName: 'Install dependencies'
+    
+    - script: |
+        black --check raptor/
+        flake8 raptor/
+      displayName: 'Run linting'
+    
+    - script: |
+        mypy raptor/ --ignore-missing-imports
+      displayName: 'Run type checking'
+      continueOnError: true
+    
+    - script: |
+        pytest tests/ -v --cov=raptor --cov-report=xml --cov-report=html --junitxml=test-results.xml
+      displayName: 'Run unit tests'
+    
+    - script: |
+        pytest tests/test_property_*.py -v --junitxml=property-test-results.xml
+      displayName: 'Run property-based tests'
+    
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFiles: '**/test-results.xml'
+        testRunTitle: 'Unit Tests - $(imageName) - Python $(pythonVersion)'
+      condition: succeededOrFailed()
+    
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFiles: '**/property-test-results.xml'
+        testRunTitle: 'Property Tests - $(imageName) - Python $(pythonVersion)'
+      condition: succeededOrFailed()
+    
+    - task: PublishCodeCoverageResults@1
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage.xml'
+        reportDirectory: '$(System.DefaultWorkingDirectory)/htmlcov'
+      condition: succeededOrFailed()
+
+- stage: IntegrationTest
+  displayName: 'Integration Test Stage'
+  dependsOn: Test
+  condition: succeeded()
+  jobs:
+  - job: IntegrationTests
+    displayName: 'Run Integration Tests'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        playwright install chromium firefox webkit
+      displayName: 'Install dependencies'
+    
+    - script: |
+        pytest tests/test_integration.py -v --junitxml=integration-test-results.xml
+      displayName: 'Run integration tests'
+    
+    - script: |
+        pytest tests/test_e2e.py -v --junitxml=e2e-test-results.xml
+      displayName: 'Run E2E tests'
+    
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFiles: '**/integration-test-results.xml'
+        testRunTitle: 'Integration Tests'
+      condition: succeededOrFailed()
+    
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFiles: '**/e2e-test-results.xml'
+        testRunTitle: 'E2E Tests'
+      condition: succeededOrFailed()
+
+- stage: PerformanceTest
+  displayName: 'Performance Test Stage'
+  dependsOn: Test
+  condition: succeeded()
+  jobs:
+  - job: PerformanceTests
+    displayName: 'Run Performance Tests'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        playwright install chromium
+      displayName: 'Install dependencies'
+    
+    - script: |
+        pytest tests/test_performance.py -v
+      displayName: 'Run performance tests'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'performance_results.json'
+        artifactName: 'performance-results'
+      condition: succeededOrFailed()
+
+- stage: SecurityScan
+  displayName: 'Security Scan Stage'
+  dependsOn: Test
+  condition: succeeded()
+  jobs:
+  - job: SecurityScans
+    displayName: 'Run Security Scans'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install safety bandit
+      displayName: 'Install security tools'
+    
+    - script: |
+        safety check --json > safety-report.json || true
+      displayName: 'Run safety check'
+    
+    - script: |
+        bandit -r raptor/ -f json -o bandit-report.json || true
+      displayName: 'Run bandit security scan'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'safety-report.json'
+        artifactName: 'security-reports'
+      condition: succeededOrFailed()
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'bandit-report.json'
+        artifactName: 'security-reports'
+      condition: succeededOrFailed()
+
+- stage: Build
+  displayName: 'Build Stage'
+  dependsOn: 
+  - Test
+  - IntegrationTest
+  condition: succeeded()
+  jobs:
+  - job: BuildPackage
+    displayName: 'Build Distribution Package'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install build twine
+      displayName: 'Install build tools'
+    
+    - script: |
+        python -m build
+      displayName: 'Build distributions'
+    
+    - script: |
+        twine check dist/*
+      displayName: 'Check distributions'
+    
+    - script: |
+        python -m venv test-venv
+        . test-venv/bin/activate
+        pip install dist/*.whl
+        python -c "import raptor; print('Version:', raptor.__version__)"
+      displayName: 'Test installation'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'dist'
+        artifactName: 'distributions'
+      displayName: 'Publish distributions'
+
+- stage: Documentation
+  displayName: 'Documentation Stage'
+  dependsOn: Test
+  condition: succeeded()
+  jobs:
+  - job: BuildDocs
+    displayName: 'Build Documentation'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install sphinx sphinx-rtd-theme
+      displayName: 'Install dependencies'
+    
+    - script: |
+        cd docs
+        make html
+      displayName: 'Build documentation'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'docs/_build/html'
+        artifactName: 'documentation'
+      displayName: 'Publish documentation'
+
+- stage: PublishTestPyPI
+  displayName: 'Publish to TestPyPI'
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+  jobs:
+  - deployment: PublishTestPyPI
+    displayName: 'Publish to TestPyPI'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: 'test-pypi'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(pythonVersion)'
+          
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: 'distributions'
+              downloadPath: '$(System.DefaultWorkingDirectory)'
+          
+          - script: |
+              python -m pip install --upgrade pip
+              pip install twine
+            displayName: 'Install twine'
+          
+          - task: TwineAuthenticate@1
+            inputs:
+              pythonUploadServiceConnection: 'TestPyPI'
+          
+          - script: |
+              twine upload --repository testpypi distributions/*
+            displayName: 'Upload to TestPyPI'
+
+- stage: PublishPyPI
+  displayName: 'Publish to PyPI'
+  dependsOn: Build
+  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+  jobs:
+  - deployment: PublishPyPI
+    displayName: 'Publish to PyPI'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: 'production-pypi'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(pythonVersion)'
+          
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: 'distributions'
+              downloadPath: '$(System.DefaultWorkingDirectory)'
+          
+          - script: |
+              python -m pip install --upgrade pip
+              pip install twine
+            displayName: 'Install twine'
+          
+          - task: TwineAuthenticate@1
+            inputs:
+              pythonUploadServiceConnection: 'PyPI'
+          
+          - script: |
+              twine upload distributions/*
+            displayName: 'Upload to PyPI'

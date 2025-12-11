@@ -1,0 +1,263 @@
+// Jenkinsfile for RAPTOR Python Playwright Framework
+// This pipeline runs tests, builds distributions, and publishes to PyPI
+
+pipeline {
+    agent any
+    
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+        timeout(time: 1, unit: 'HOURS')
+    }
+    
+    environment {
+        PYTHON_VERSION = '3.10'
+        VENV_DIR = 'venv'
+        PYPI_CREDENTIALS = credentials('pypi-credentials')
+        TEST_PYPI_CREDENTIALS = credentials('test-pypi-credentials')
+    }
+    
+    stages {
+        stage('Setup') {
+            steps {
+                echo 'Setting up Python environment...'
+                sh '''
+                    python${PYTHON_VERSION} -m venv ${VENV_DIR}
+                    . ${VENV_DIR}/bin/activate
+                    pip install --upgrade pip
+                    pip install -e ".[dev]"
+                    playwright install chromium
+                '''
+            }
+        }
+        
+        stage('Lint') {
+            steps {
+                echo 'Running code quality checks...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    black --check raptor/
+                    flake8 raptor/
+                    mypy raptor/ --ignore-missing-imports || true
+                '''
+            }
+        }
+        
+        stage('Unit Tests') {
+            steps {
+                echo 'Running unit tests...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pytest tests/ -v \
+                        --cov=raptor \
+                        --cov-report=xml \
+                        --cov-report=html \
+                        --junitxml=test-results.xml
+                '''
+            }
+            post {
+                always {
+                    junit 'test-results.xml'
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'htmlcov',
+                        reportFiles: 'index.html',
+                        reportName: 'Coverage Report'
+                    ])
+                }
+            }
+        }
+        
+        stage('Property-Based Tests') {
+            steps {
+                echo 'Running property-based tests...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pytest tests/test_property_*.py -v \
+                        --junitxml=property-test-results.xml
+                '''
+            }
+            post {
+                always {
+                    junit 'property-test-results.xml'
+                }
+            }
+        }
+        
+        stage('Integration Tests') {
+            steps {
+                echo 'Running integration tests...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    playwright install firefox webkit
+                    pytest tests/test_integration.py -v \
+                        --junitxml=integration-test-results.xml
+                '''
+            }
+            post {
+                always {
+                    junit 'integration-test-results.xml'
+                }
+            }
+        }
+        
+        stage('E2E Tests') {
+            steps {
+                echo 'Running end-to-end tests...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pytest tests/test_e2e.py -v \
+                        --junitxml=e2e-test-results.xml
+                '''
+            }
+            post {
+                always {
+                    junit 'e2e-test-results.xml'
+                }
+            }
+        }
+        
+        stage('Performance Tests') {
+            steps {
+                echo 'Running performance tests...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pytest tests/test_performance.py -v
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'performance_results.json', allowEmptyArchive: true
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                echo 'Running security scans...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pip install safety bandit
+                    safety check --json > safety-report.json || true
+                    bandit -r raptor/ -f json -o bandit-report.json || true
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: '*-report.json', allowEmptyArchive: true
+                }
+            }
+        }
+        
+        stage('Build Distribution') {
+            steps {
+                echo 'Building distribution packages...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pip install build twine
+                    python -m build
+                    twine check dist/*
+                '''
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'dist/*', fingerprint: true
+                }
+            }
+        }
+        
+        stage('Test Installation') {
+            steps {
+                echo 'Testing package installation...'
+                sh '''
+                    python${PYTHON_VERSION} -m venv test-venv
+                    . test-venv/bin/activate
+                    pip install dist/*.whl
+                    python -c "import raptor; print('Version:', raptor.__version__)"
+                    rm -rf test-venv
+                '''
+            }
+        }
+        
+        stage('Publish to TestPyPI') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                echo 'Publishing to TestPyPI...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    twine upload --repository testpypi dist/* \
+                        --username __token__ \
+                        --password ${TEST_PYPI_CREDENTIALS}
+                '''
+            }
+        }
+        
+        stage('Publish to PyPI') {
+            when {
+                tag pattern: "v\\d+\\.\\d+\\.\\d+", comparator: "REGEXP"
+            }
+            steps {
+                echo 'Publishing to PyPI...'
+                input message: 'Publish to PyPI?', ok: 'Deploy'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    twine upload dist/* \
+                        --username __token__ \
+                        --password ${PYPI_CREDENTIALS}
+                '''
+            }
+        }
+        
+        stage('Build Documentation') {
+            steps {
+                echo 'Building documentation...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pip install sphinx sphinx-rtd-theme
+                    cd docs
+                    make html
+                '''
+            }
+            post {
+                success {
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'docs/_build/html',
+                        reportFiles: 'index.html',
+                        reportName: 'Documentation'
+                    ])
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Cleaning up...'
+            sh 'rm -rf ${VENV_DIR} test-venv'
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+            emailext(
+                subject: "SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                body: "Build succeeded: ${env.BUILD_URL}",
+                to: "${env.CHANGE_AUTHOR_EMAIL}"
+            )
+        }
+        failure {
+            echo 'Pipeline failed!'
+            emailext(
+                subject: "FAILURE: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                body: "Build failed: ${env.BUILD_URL}",
+                to: "${env.CHANGE_AUTHOR_EMAIL}"
+            )
+        }
+    }
+}

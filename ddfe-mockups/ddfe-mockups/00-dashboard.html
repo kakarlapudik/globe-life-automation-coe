@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - DDFE Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .nav-tabs {
+            background: white;
+            border-bottom: 2px solid #e1e8ed;
+            padding: 0 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-tab {
+            padding: 1rem 0;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            border-bottom-color: #3498db;
+            color: #3498db;
+            font-weight: 500;
+        }
+        
+        .nav-tab:hover {
+            color: #3498db;
+        }
+        
+        .main-content {
+            padding: 2rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+        
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #3498db;
+            margin: 0.5rem 0;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .stat-change {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+        
+        .stat-change.positive {
+            color: #27ae60;
+        }
+        
+        .stat-change.negative {
+            color: #e74c3c;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .activity-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e1e8ed;
+            display: flex;
+            gap: 1rem;
+            align-items: start;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            font-size: 1.5rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 50%;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .activity-meta {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        
+        .quick-actions {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .action-btn {
+            padding: 1rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: white;
+        }
+        
+        .action-btn:hover {
+            border-color: #3498db;
+            background: #f8f9fa;
+        }
+        
+        .action-icon {
+            font-size: 2rem;
+        }
+        
+        .action-text {
+            flex: 1;
+        }
+        
+        .action-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .action-desc {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 AI Test Automation Platform</h1>
+        <div class="header-right">
+            <span>John Doe ▼</span>
+            <span>🔔</span>
+            <span>⚙️</span>
+        </div>
+    </div>
+    
+    <div class="nav-tabs">
+        <div class="nav-tab active">► Dashboard</div>
+        <div class="nav-tab">Tests</div>
+        <div class="nav-tab">Elements</div>
+        <div class="nav-tab">Execution</div>
+        <div class="nav-tab">Reports</div>
+        <div class="nav-tab">Analytics</div>
+    </div>
+    
+    <div class="main-content">
+        <h2 class="page-title">🏠 Dashboard</h2>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📱</div>
+                <div class="stat-label">Total Applications</div>
+                <div class="stat-value">12</div>
+                <div class="stat-change positive">↑ 2 new this month</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">📄</div>
+                <div class="stat-label">Total Pages</div>
+                <div class="stat-value">89</div>
+                <div class="stat-change positive">↑ 5 added recently</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🔘</div>
+                <div class="stat-label">Total Elements</div>
+                <div class="stat-value">1,247</div>
+                <div class="stat-change positive">↑ 34 this week</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-label">Success Rate</div>
+                <div class="stat-value">96%</div>
+                <div class="stat-change positive">↑ 2% improvement</div>
+            </div>
+        </div>
+        
+        <div class="content-grid">
+            <div class="card">
+                <div class="card-title">📊 Recent Activity</div>
+                <div class="activity-item">
+                    <div class="activity-icon">✏️</div>
+                    <div class="activity-content">
+                        <div class="activity-title">Login Button Updated</div>
+                        <div class="activity-meta">John Doe • 2 hours ago • E-Commerce Platform</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">➕</div>
+                    <div class="activity-content">
+                        <div class="activity-title">New Page Added: Checkout</div>
+                        <div class="activity-meta">Jane Smith • 5 hours ago • Mobile App</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">🤖</div>
+                    <div class="activity-content">
+                        <div class="activity-title">AI Scan Completed</div>
+                        <div class="activity-meta">System • 1 day ago • Admin Portal</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">🔧</div>
+                    <div class="activity-content">
+                        <div class="activity-title">Element Selector Fixed</div>
+                        <div class="activity-meta">Mike Johnson • 2 days ago • E-Commerce Platform</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">📱</div>
+                    <div class="activity-content">
+                        <div class="activity-title">New Application Created</div>
+                        <div class="activity-meta">Sarah Lee • 3 days ago • Payment Gateway</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">⚡ Quick Actions</div>
+                <div class="quick-actions">
+                    <button class="action-btn">
+                        <div class="action-icon">➕</div>
+                        <div class="action-text">
+                            <div class="action-title">New Element</div>
+                            <div class="action-desc">Create a new UI element</div>
+                        </div>
+                    </button>
+                    
+                    <button class="action-btn">
+                        <div class="action-icon">🤖</div>
+                        <div class="action-text">
+                            <div class="action-title">AI Scan</div>
+                            <div class="action-desc">Detect elements automatically</div>
+                        </div>
+                    </button>
+                    
+                    <button class="action-btn">
+                        <div class="action-icon">📱</div>
+                        <div class="action-text">
+                            <div class="action-title">New Application</div>
+                            <div class="action-desc">Add a new app to track</div>
+                        </div>
+                    </button>
+                    
+                    <button class="action-btn">
+                        <div class="action-icon">📊</div>
+                        <div class="action-text">
+                            <div class="action-title">View Analytics</div>
+                            <div class="action-desc">See detailed insights</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

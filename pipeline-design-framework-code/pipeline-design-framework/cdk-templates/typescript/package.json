@@ -1,0 +1,38 @@
+{
+  "name": "@pipeline-framework/typescript-pipeline-stack",
+  "version": "1.0.0",
+  "description": "TypeScript PipelineStack template for Pipeline Design Framework",
+  "main": "pipeline-stack.js",
+  "types": "pipeline-stack.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk"
+  },
+  "keywords": [
+    "aws-cdk",
+    "pipeline",
+    "codepipeline",
+    "typescript",
+    "infrastructure"
+  ],
+  "author": "Pipeline Design Framework Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "aws-cdk-lib": "^2.100.0",
+    "constructs": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "aws-cdk": "^2.100.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

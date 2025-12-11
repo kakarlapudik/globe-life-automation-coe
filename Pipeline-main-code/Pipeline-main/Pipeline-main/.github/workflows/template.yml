@@ -1,0 +1,43 @@
+name: Deploy Infrastructure
+on:
+  push:
+    branches:
+      - main_branch # main branch for the pipeline trigger deploy
+  workflow_dispatch:
+permissions:
+  deployments: write
+  statuses: write
+  contents: write
+  id-token: write
+  actions: write
+  checks: write
+  packages: write
+  pull-requests: write
+jobs:
+  deploy:
+    runs-on: 
+      - self-hosted
+    steps:
+      - name: Checkout Pipeline Code
+        id: checkout
+        uses: GlobeLifeAppDev/actions-checkout-v4@main
+        continue-on-error: false
+      - name: Deploy CDK Infrastructure
+        id: deploy-step # reference steps and track failures.
+        if: success()   
+        uses: GlobeLifeAppDev/Pipeline@v1.0.1
+        with: 
+          dev-account: '<dev-account-id>' # Account ID of the source account where the pipeline and application stacks are deployed.
+          tst-account: '<test-account-id>' # Account ID of the test target account where application stack is deployed.
+          stg-account: '<staging-account-id>' # Account ID of the stage target account where application stack is deployed.
+          prd-account: '<prod-account-id>' # Account ID of the production target account where application stack is deployed.
+          app-name: '<app-name>'  # Appname must be an alphanumeric identifier of at most 10 characters.
+          stack-id: '<stack-id>'  # Stack id must be a unique alphanumeric  identifier of at most 10 characters.Ex: 'Api', 'ui', 'Services'
+          app-dir: '${{ github.workspace }}/ApplicationStackCode'  # Point to the specific CDK App code directory to deploy. The directory must contain a cdk.json file.
+          permissions-boundary: '<boundary-name>' # permissions boundary that allow the pipeline to assume roles in the target accounts
+          role-to-assume: 'arn:aws:iam::<account-id>:role/<role-name>' # Role to assume in the source account to deploy the pipeline
+          platform: 'typescript' # Specify the platform for the application {.net, python, typescript}        
+          cross-account-boundary: '<cross-account-boundary>' # boundary policy for bootstrapping in target accounts, all should match
+          approval-notification: '<email>' # request for approval email/dist list
+          action-type: 'deploy' # deploy to create stack, destroy to remove stack, default is deploy
+        continue-on-error: false # Stop the workflow if the step fails

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Element Repository Browser - DDFE Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .nav-tabs {
+            background: white;
+            border-bottom: 2px solid #e1e8ed;
+            padding: 0 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-tab {
+            padding: 1rem 0;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            border-bottom-color: #3498db;
+            color: #3498db;
+            font-weight: 500;
+        }
+        
+        .nav-tab:hover {
+            color: #3498db;
+        }
+        
+        .main-content {
+            padding: 2rem;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .search-bar {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .btn-secondary {
+            background: white;
+            border: 2px solid #e1e8ed;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            border-color: #3498db;
+            color: #3498db;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            height: fit-content;
+        }
+        
+        .sidebar-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .tree-item {
+            padding: 0.5rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+            user-select: none;
+        }
+        
+        .tree-item:hover {
+            background: #f5f7fa;
+        }
+        
+        .tree-item.active {
+            background: #e3f2fd;
+            color: #3498db;
+        }
+        
+        .tree-children {
+            margin-left: 1.5rem;
+        }
+        
+        .element-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .element-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .element-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .element-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        
+        .element-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .element-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .element-selectors {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .selector-line {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin: 0.25rem 0;
+        }
+        
+        .element-stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .element-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-small {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-edit {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #2980b9;
+        }
+        
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+        
+        .btn-test {
+            background: #2ecc71;
+            color: white;
+        }
+        
+        .btn-test:hover {
+            background: #27ae60;
+        }
+        
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+        
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #e1e8ed;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .page-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .tip-box {
+            background: #e3f2fd;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 AI Test Automation Platform</h1>
+        <div class="header-right">
+            <span>John Doe ▼</span>
+            <span>🔔</span>
+            <span>⚙️</span>
+        </div>
+    </div>
+    
+    <div class="nav-tabs">
+        <div class="nav-tab">Dashboard</div>
+        <div class="nav-tab">Tests</div>
+        <div class="nav-tab active">► Elements</div>
+        <div class="nav-tab">Execution</div>
+        <div class="nav-tab">Reports</div>
+        <div class="nav-tab">Analytics</div>
+    </div>
+    
+    <div class="main-content">
+        <div class="page-header">
+            <h2 class="page-title">Element Repository</h2>
+            <button class="btn-primary">+ New Element</button>
+        </div>
+        
+        <div class="search-bar">
+            <input type="text" class="search-input" placeholder="🔍 Search elements...">
+            <button class="btn-secondary">🔽 Filter</button>
+            <button class="btn-secondary">⚡ Quick Actions</button>
+        </div>
+        
+        <div class="content-grid">
+            <div class="sidebar">
+                <div class="sidebar-title">📁 Applications</div>
+                <div class="tree-item active">
+                    <div>▼ 🌐 E-Commerce App</div>
+                    <div class="tree-children">
+                        <div class="tree-item active">▼ 🏠 Home Page</div>
+                        <div class="tree-children">
+                            <div class="tree-item">• Login Button</div>
+                            <div class="tree-item">• Search Box</div>
+                            <div class="tree-item">• Cart Icon</div>
+                        </div>
+                        <div class="tree-item">▶ 🛒 Cart Page</div>
+                        <div class="tree-item">▶ 💳 Checkout</div>
+                    </div>
+                </div>
+                <div class="tree-item">▶ 📱 Mobile App</div>
+                <div class="tree-item">▶ 🔧 Admin Portal</div>
+                <button class="btn-primary" style="width: 100%; margin-top: 1rem;">+ New App</button>
+            </div>
+            
+            <div>
+                <div style="margin-bottom: 1rem; color: #7f8c8d;">Elements (127)</div>
+                <div class="element-grid">
+                    <div class="element-card">
+                        <div class="element-header">
+                            <div class="element-name">
+                                🔘 Login Button
+                                <span class="badge badge-success">98%</span>
+                            </div>
+                        </div>
+                        <div class="element-meta">
+                            <span><strong>Type:</strong> Button</span>
+                            <span><strong>Page:</strong> Home</span>
+                        </div>
+                        <div class="element-selectors">
+                            <div class="selector-line"><strong>Primary:</strong> #login-btn</div>
+                            <div class="selector-line"><strong>Fallback:</strong> button[type="submit"]</div>
+                        </div>
+                        <div class="element-stats">
+                            <div class="stat">⏰ Last Used: 2 hours ago</div>
+                            <div class="stat">✅ Success: 98%</div>
+                        </div>
+                        <div class="element-actions">
+                            <button class="btn-small btn-edit">✏️ Edit</button>
+                            <button class="btn-small btn-delete">🗑️ Delete</button>
+                            <button class="btn-small btn-test">▶️ Test</button>
+                        </div>
+                    </div>
+                    
+                    <div class="element-card">
+                        <div class="element-header">
+                            <div class="element-name">
+                                📝 Search Box
+                                <span class="badge badge-warning">95%</span>
+                            </div>
+                        </div>
+                        <div class="element-meta">
+                            <span><strong>Type:</strong> Input</span>
+                            <span><strong>Page:</strong> Home</span>
+                        </div>
+                        <div class="element-selectors">
+                            <div class="selector-line"><strong>Primary:</strong> input[name="search"]</div>
+                            <div class="selector-line"><strong>Fallback:</strong> .search-input</div>
+                        </div>
+                        <div class="element-stats">
+                            <div class="stat">⏰ Last Used: 5 mins ago</div>
+                            <div class="stat">✅ Success: 95%</div>
+                        </div>
+                        <div class="element-actions">
+                            <button class="btn-small btn-edit">✏️ Edit</button>
+                            <button class="btn-small btn-delete">🗑️ Delete</button>
+                            <button class="btn-small btn-test">▶️ Test</button>
+                        </div>
+                    </div>
+                    
+                    <div class="element-card">
+                        <div class="element-header">
+                            <div class="element-name">
+                                🛒 Cart Icon
+                                <span class="badge badge-warning">92%</span>
+                            </div>
+                        </div>
+                        <div class="element-meta">
+                            <span><strong>Type:</strong> Icon</span>
+                            <span><strong>Page:</strong> Home</span>
+                        </div>
+                        <div class="element-selectors">
+                            <div class="selector-line"><strong>Primary:</strong> .cart-icon</div>
+                            <div class="selector-line"><strong>Fallback:</strong> [data-testid="cart"]</div>
+                        </div>
+                        <div class="element-stats">
+                            <div class="stat">⏰ Last Used: 1 day ago</div>
+                            <div class="stat">✅ Success: 92%</div>
+                        </div>
+                        <div class="element-actions">
+                            <button class="btn-small btn-edit">✏️ Edit</button>
+                            <button class="btn-small btn-delete">🗑️ Delete</button>
+                            <button class="btn-small btn-test">▶️ Test</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pagination">
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn">3</button>
+                    <button class="page-btn">...</button>
+                    <button class="page-btn">13</button>
+                    <span style="padding: 0.5rem 1rem;">Showing 1-10 of 127</span>
+                </div>
+                
+                <div class="tip-box">
+                    💡 <strong>Tip:</strong> Use AI-powered element detection to automatically discover elements
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

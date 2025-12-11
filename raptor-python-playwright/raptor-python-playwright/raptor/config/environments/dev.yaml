@@ -1,0 +1,50 @@
+# RAPTOR Framework - Development Environment Configuration
+
+# Browser Configuration
+browser:
+  headless: false
+  slow_mo: 100  # Slow down for easier debugging
+
+# Timeout Configuration
+timeouts:
+  default: 30000  # Longer timeouts for debugging
+  element: 30000
+  page: 60000
+
+# Logging Configuration
+logging:
+  level: DEBUG  # Verbose logging for development
+  console_output: true
+  file_output: true
+
+# Screenshot Configuration
+screenshots:
+  enabled: true
+  on_failure: true
+  full_page: true  # Capture full page in dev
+
+# Database Configuration
+database:
+  host: localhost
+  port: 1433
+  database: DDFE_Dev
+  user: dev_user
+  # Password should be set via environment variable RAPTOR_DB_PASSWORD
+
+# Test Execution Configuration
+test_execution:
+  parallel: false  # Sequential execution for easier debugging
+  retry_failed: true
+  retry_count: 2
+
+# Session Management
+session:
+  auto_cleanup: false  # Keep sessions for debugging
+  max_age_hours: 48
+
+# Reporting Configuration
+reporting:
+  enabled: true
+  include_screenshots: true
+  include_logs: true
+  path: ./reports/dev

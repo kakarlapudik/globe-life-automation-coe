@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Element History - DDFE Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .nav-tabs {
+            background: white;
+            border-bottom: 2px solid #e1e8ed;
+            padding: 0 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-tab {
+            padding: 1rem 0;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            border-bottom-color: #3498db;
+            color: #3498db;
+            font-weight: 500;
+        }
+        
+        .nav-tab:hover {
+            color: #3498db;
+        }
+        
+        .main-content {
+            padding: 2rem;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .element-info-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+        
+        .element-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .element-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .detail-label {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e1e8ed;
+        }
+        
+        .timeline-item {
+            position: relative;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+            transition: all 0.3s;
+        }
+        
+        .timeline-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -1.5rem;
+            top: 1.5rem;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            background: #3498db;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #3498db;
+        }
+        
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        
+        .timeline-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .timeline-meta {
+            display: flex;
+            gap: 1.5rem;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .change-section {
+            margin-top: 1rem;
+        }
+        
+        .change-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .diff-view {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .diff-line {
+            padding: 0.25rem 0.5rem;
+            margin: 0.125rem 0;
+            border-radius: 3px;
+        }
+        
+        .diff-removed {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .diff-added {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .diff-unchanged {
+            color: #7f8c8d;
+        }
+        
+        .timeline-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-small {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-revert {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn-revert:hover {
+            background: #e67e22;
+        }
+        
+        .btn-view {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-view:hover {
+            background: #2980b9;
+        }
+        
+        .btn-compare {
+            background: #9b59b6;
+            color: white;
+        }
+        
+        .btn-compare:hover {
+            background: #8e44ad;
+        }
+        
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .tip-box {
+            background: #e3f2fd;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 AI Test Automation Platform</h1>
+        <div class="header-right">
+            <span>John Doe ▼</span>
+            <span>🔔</span>
+            <span>⚙️</span>
+        </div>
+    </div>
+    
+    <div class="nav-tabs">
+        <div class="nav-tab">Dashboard</div>
+        <div class="nav-tab">Tests</div>
+        <div class="nav-tab active">► Elements</div>
+        <div class="nav-tab">Execution</div>
+        <div class="nav-tab">Reports</div>
+        <div class="nav-tab">Analytics</div>
+    </div>
+    
+    <div class="main-content">
+        <div class="breadcrumb">
+            <a href="#">Applications</a>
+            <span>›</span>
+            <a href="#">E-Commerce Platform</a>
+            <span>›</span>
+            <a href="#">Home Page</a>
+            <span>›</span>
+            <a href="#">Login Button</a>
+            <span>›</span>
+            <span>History</span>
+        </div>
+        
+        <div class="page-header">
+            <h2 class="page-title">📜 Element History</h2>
+            <button class="btn-primary">🔄 Compare Versions</button>
+        </div>
+        
+        <div class="element-info-card">
+            <div class="element-title">
+                🔘 Login Button
+                <span class="badge badge-success">Active</span>
+            </div>
+            <div class="element-details">
+                <div class="detail-item">
+                    <div class="detail-label">Current Version</div>
+                    <div class="detail-value">v4.2</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Changes</div>
+                    <div class="detail-value">12 revisions</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Created</div>
+                    <div class="detail-value">Jan 15, 2024</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Last Modified</div>
+                    <div class="detail-value">2 hours ago</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div class="timeline-title">
+                        Updated Selector Strategy
+                        <span class="badge badge-info">v4.2</span>
+                    </div>
+                </div>
+                <div class="timeline-meta">
+                    <div class="meta-item">
+                        <span>👤</span>
+                        <span>John Doe</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>📅</span>
+                        <span>Nov 27, 2025 - 2:30 PM</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>💬</span>
+                        <span>Added fallback selector for better reliability</span>
+                    </div>
+                </div>
+                <div class="change-section">
+                    <div class="change-title">Changes:</div>
+                    <div class="diff-view">
+                        <div class="diff-line diff-unchanged">Primary Selector:</div>
+                        <div class="diff-line diff-unchanged">  #login-btn</div>
+                        <div class="diff-line diff-removed">- Fallback: .login-button</div>
+                        <div class="diff-line diff-added">+ Fallback: button[type="submit"].login</div>
+                    </div>
+                </div>
+                <div class="timeline-actions">
+                    <button class="btn-small btn-view">👁️ View Full</button>
+                    <button class="btn-small btn-revert">↩️ Revert to This</button>
+                    <button class="btn-small btn-compare">⚖️ Compare</button>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div class="timeline-title">
+                        Updated Element Description
+                        <span class="badge badge-info">v4.1</span>
+                    </div>
+                </div>
+                <div class="timeline-meta">
+                    <div class="meta-item">
+                        <span>👤</span>
+                        <span>Jane Smith</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>📅</span>
+                        <span>Nov 25, 2025 - 10:15 AM</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>💬</span>
+                        <span>Clarified element purpose</span>
+                    </div>
+                </div>
+                <div class="change-section">
+                    <div class="change-title">Changes:</div>
+                    <div class="diff-view">
+                        <div class="diff-line diff-removed">- Description: Login button</div>
+                        <div class="diff-line diff-added">+ Description: Primary login button on home page</div>
+                    </div>
+                </div>
+                <div class="timeline-actions">
+                    <button class="btn-small btn-view">👁️ View Full</button>
+                    <button class="btn-small btn-revert">↩️ Revert to This</button>
+                    <button class="btn-small btn-compare">⚖️ Compare</button>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div class="timeline-title">
+                        Fixed Selector After UI Update
+                        <span class="badge badge-warning">v4.0</span>
+                    </div>
+                </div>
+                <div class="timeline-meta">
+                    <div class="meta-item">
+                        <span>👤</span>
+                        <span>Mike Johnson</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>📅</span>
+                        <span>Nov 20, 2025 - 3:45 PM</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>💬</span>
+                        <span>Updated after homepage redesign</span>
+                    </div>
+                </div>
+                <div class="change-section">
+                    <div class="change-title">Changes:</div>
+                    <div class="diff-view">
+                        <div class="diff-line diff-removed">- Primary: #btn-login</div>
+                        <div class="diff-line diff-added">+ Primary: #login-btn</div>
+                        <div class="diff-line diff-removed">- Fallback: button.login</div>
+                        <div class="diff-line diff-added">+ Fallback: .login-button</div>
+                    </div>
+                </div>
+                <div class="timeline-actions">
+                    <button class="btn-small btn-view">👁️ View Full</button>
+                    <button class="btn-small btn-revert">↩️ Revert to This</button>
+                    <button class="btn-small btn-compare">⚖️ Compare</button>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div class="timeline-title">
+                        Added Wait Strategy
+                        <span class="badge badge-info">v3.5</span>
+                    </div>
+                </div>
+                <div class="timeline-meta">
+                    <div class="meta-item">
+                        <span>👤</span>
+                        <span>Sarah Lee</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>📅</span>
+                        <span>Nov 15, 2025 - 9:20 AM</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>💬</span>
+                        <span>Added explicit wait for element visibility</span>
+                    </div>
+                </div>
+                <div class="change-section">
+                    <div class="change-title">Changes:</div>
+                    <div class="diff-view">
+                        <div class="diff-line diff-added">+ Wait Strategy: Wait for Visible</div>
+                        <div class="diff-line diff-added">+ Timeout: 10 seconds</div>
+                    </div>
+                </div>
+                <div class="timeline-actions">
+                    <button class="btn-small btn-view">👁️ View Full</button>
+                    <button class="btn-small btn-revert">↩️ Revert to This</button>
+                    <button class="btn-small btn-compare">⚖️ Compare</button>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div class="timeline-title">
+                        Element Created
+                        <span class="badge badge-success">v1.0</span>
+                    </div>
+                </div>
+                <div class="timeline-meta">
+                    <div class="meta-item">
+                        <span>👤</span>
+                        <span>John Doe</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>📅</span>
+                        <span>Jan 15, 2024 - 11:00 AM</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>💬</span>
+                        <span>Initial element creation</span>
+                    </div>
+                </div>
+                <div class="change-section">
+                    <div class="change-title">Initial Configuration:</div>
+                    <div class="diff-view">
+                        <div class="diff-line diff-added">+ Name: Login Button</div>
+                        <div class="diff-line diff-added">+ Type: Button</div>
+                        <div class="diff-line diff-added">+ Primary Selector: #btn-login</div>
+                        <div class="diff-line diff-added">+ Page: Home</div>
+                    </div>
+                </div>
+                <div class="timeline-actions">
+                    <button class="btn-small btn-view">👁️ View Full</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tip-box">
+            💡 <strong>Tip:</strong> Track element changes over time to understand how your UI evolves and maintain test stability
+        </div>
+    </div>
+</body>
+</html>

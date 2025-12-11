@@ -1,0 +1,50 @@
+# MANIFEST.in - Package distribution manifest
+# This file specifies which files to include in the source distribution
+
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+
+# Include configuration files
+recursive-include raptor/config *.yaml *.yml *.json
+include raptor/config/README.md
+
+# Include documentation
+recursive-include docs *.md *.rst *.txt
+include docs/conf.py
+include docs/Makefile
+include docs/make.bat
+
+# Include examples
+recursive-include examples *.py *.md
+
+# Include tests (for source distribution)
+recursive-include tests *.py
+include tests/conftest.py
+include pytest.ini
+
+# Include type stubs
+recursive-include raptor *.pyi py.typed
+
+# Exclude compiled files and caches
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~
+
+# Exclude development and build artifacts
+prune .git
+prune .github
+prune .pytest_cache
+prune .mypy_cache
+prune .hypothesis
+prune build
+prune dist
+prune *.egg-info
+prune htmlcov
+prune .coverage

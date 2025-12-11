@@ -1,0 +1,117 @@
+name: 'Deploy CDK Infrastructure'
+description: 'Deploys AWS CDK infrastructure with specified configurations'
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '20'
+  cdk-default-region:
+    description: 'AWS Region'
+    required: false
+    default: 'us-west-2'
+  dev-account:
+    description: 'DEV Account ID for CDK'
+    required: false
+    default: ''
+  tst-account:
+    description: 'Test Account ID'
+    required: false
+    default: ''
+  stg-account:
+    description: 'Staging Account ID'
+    required: false
+    default: ''
+  prd-account:
+    description: 'Production Account ID'
+    required: false
+    default: ''
+  app-name:
+    description: 'Application Name'
+    required: true
+  stack-id:
+    description: 'Stack ID for CDK Name'
+    required: true
+  app-dir:
+    description: 'Application Directory'
+    required: true
+  permissions-boundary:
+    description: 'IAM Permissions Boundary'
+    required: true
+  role-to-assume:
+    description: 'AWS IAM Role to assume'
+    required: true
+  platform:
+    description: 'Platform for the CDK application'
+    required: true
+  cross-account-boundary:
+    description: 'Cross Account Boundary'
+    required: true
+  approval-notification:
+    description: 'Notification email for Approvals'
+    required: true
+  action-type:
+    description: 'Deploy or Destroy App Stack, default deploy'
+    required: false
+    default: 'deploy'
+
+runs:
+  using: "composite"
+  steps:
+    - uses: GlobeLifeAppDev/actions-checkout-v4@main
+
+    - name: Set up Node
+      uses: GlobeLifeAppDev/actions-setup-node-v4.0.3@main
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Set environment variables
+      shell: powershell
+      run: |
+        $env:DEV_ACCOUNT="${{ inputs.dev-account }}"
+        $env:TST_ACCOUNT="${{ inputs.tst-account }}"
+        $env:STG_ACCOUNT="${{ inputs.stg-account }}"
+        $env:PRD_ACCOUNT="${{ inputs.prd-account }}"
+        $env:APP_NAME="${{ inputs.app-name }}"
+        $env:STACK_ID="${{ inputs.stack-id }}"
+        $env:APP_DIR="${{ inputs.app-dir }}"
+        $env:PLATFORM="${{ inputs.platform }}"
+        $env:PERMISSIONS_BOUNDARY="${{ inputs.permissions-boundary }}"
+        $env:CROSS_ACCOUNT_BOUNDARY="${{ inputs.cross-account-boundary }}"
+        $env:APPROVAL_NOTIFICATION="${{ inputs.approval-notification }}"
+        $env:ACTION_TYPE="${{ inputs.action-type }}"
+
+        
+        "DEV_ACCOUNT=$($env:DEV_ACCOUNT)" >> $env:GITHUB_ENV
+        "TST_ACCOUNT=$($env:TST_ACCOUNT)" >> $env:GITHUB_ENV
+        "STG_ACCOUNT=$($env:STG_ACCOUNT)" >> $env:GITHUB_ENV
+        "PRD_ACCOUNT=$($env:PRD_ACCOUNT)" >> $env:GITHUB_ENV
+        "APP_NAME=$($env:APP_NAME)" >> $env:GITHUB_ENV
+        "STACK_ID=$($env:STACK_ID)" >> $env:GITHUB_ENV
+        "APP_DIR=$($env:APP_DIR)" >> $env:GITHUB_ENV
+        "PLATFORM=$($env:PLATFORM)" >> $env:GITHUB_ENV
+        "PERMISSIONS_BOUNDARY=$($env:PERMISSIONS_BOUNDARY)" >> $env:GITHUB_ENV
+        "CROSS_ACCOUNT_BOUNDARY=$($env:CROSS_ACCOUNT_BOUNDARY)" >> $env:GITHUB_ENV
+        "APPROVAL_NOTIFICATION=$($env:APPROVAL_NOTIFICATION)" >> $env:GITHUB_ENV
+        "ACTION_TYPE=$($env:ACTION_TYPE)" >> $env:GITHUB_ENV
+        
+
+    - name: Install Pipeline Dependencies
+      shell: powershell
+      working-directory: ${{ github.action_path }}/PipelineStack/
+      run: |
+        npm install -g aws-cdk
+        npm install
+
+    - name: Configure AWS credentials
+      uses: GlobeLifeAppDev/aws-actions-configure-aws-credentials-v4@main
+      with:
+        role-to-assume: ${{ inputs.role-to-assume }}
+        aws-region: ${{ inputs.cdk-default-region }}
+
+    - name: Deploy to PipelineStack AWS
+      shell: powershell
+      working-directory: ${{ github.action_path }}/PipelineStack/
+      run: |
+        cdk bootstrap --toolkit-stack-name CDKToolkit${{ inputs.app-name }} --custom-permissions-boundary ${{ inputs.permissions-boundary }} --cloudformation-execution-policies "arn:aws:iam::aws:policy/AdministratorAccess,arn:aws:iam::aws:policy/CloudWatchFullAccessV2,arn:aws:iam::aws:policy/AmazonSNSFullAccess,arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess,arn:aws:iam::aws:policy/AWSCodeDeployFullAccess,arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess,arn:aws:iam::aws:policy/AWSLambda_FullAccess" --qualifier $("${{ inputs.app-name }}".ToLower())
+        cdk deploy PipelineStack${{ inputs.app-name }}${{ inputs.stack-id }} --require-approval never

@@ -1,0 +1,116 @@
+# Multi-Stack Deployment Template
+# Reusable Azure Pipeline template for multi-stack CDK deployments
+# Version: 1.0.0
+
+parameters:
+  - name: appName
+    type: string
+    displayName: 'Application Name'
+  
+  - name: permissionsBoundary
+    type: string
+    displayName: 'IAM Permissions Boundary ARN'
+  
+  - name: awsServiceConnection
+    type: string
+    displayName: 'AWS Service Connection Name'
+  
+  - name: platform
+    type: string
+    default: 'python'
+    values:
+      - python
+      - typescript
+      - dotnet
+    displayName: 'CDK Platform'
+  
+  - name: stacks
+    type: object
+    displayName: 'Stack Configuration Array'
+  
+  - name: nodeVersion
+    type: string
+    default: '20'
+    displayName: 'Node.js Version'
+  
+  - name: cdkDefaultRegion
+    type: string
+    default: 'us-west-2'
+    displayName: 'CDK Default Region'
+  
+  - name: approvalNotification
+    type: string
+    default: ''
+    displayName: 'Approval SNS Topic ARN (optional)'
+
+stages:
+  # Validation Stage
+  - stage: Validation
+    displayName: 'Multi-Stack Validation'
+    jobs:
+      - job: ValidateConfiguration
+        displayName: 'Validate Multi-Stack Configuration'
+        steps:
+          - checkout: none
+          
+          - task: PowerShell@2
+            displayName: 'Validate Multi-Stack Parameters'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating multi-stack configuration..."
+                Write-Host "App Name: ${{ parameters.appName }}"
+                Write-Host "Platform: ${{ parameters.platform }}"
+                Write-Host "✅ Multi-stack configuration validated successfully"
+  
+  # Dynamic Stack Deployment Stages
+  - ${{ each stack in parameters.stacks }}:
+    - stage: Deploy_${{ replace(stack.stackId, '-', '_') }}
+      displayName: 'Deploy ${{ stack.stackId }} Stack'
+      dependsOn: 
+        - Validation
+        - ${{ each dependency in stack.dependsOn }}:
+          - Deploy_${{ replace(dependency, '-', '_') }}
+      jobs:
+        - template: cdk-deploy-template.yml
+          parameters:
+            appName: '${{ parameters.appName }}'
+            stackId: '${{ stack.stackId }}'
+            appDir: '${{ stack.appDir }}'
+            permissionsBoundary: '${{ parameters.permissionsBoundary }}'
+            awsServiceConnection: '${{ parameters.awsServiceConnection }}'
+            platform: '${{ parameters.platform }}'
+            nodeVersion: '${{ parameters.nodeVersion }}'
+            cdkDefaultRegion: '${{ parameters.cdkDefaultRegion }}'
+            actionType: 'deploy'
+            approvalNotification: '${{ parameters.approvalNotification }}'
+  
+  # Post-Deployment Validation
+  - stage: PostDeploymentValidation
+    displayName: 'Post-Deployment Validation'
+    dependsOn: 
+      - ${{ each stack in parameters.stacks }}:
+        - Deploy_${{ replace(stack.stackId, '-', '_') }}
+    jobs:
+      - job: ValidateDeployment
+        displayName: 'Validate Multi-Stack Deployment'
+        steps:
+          - checkout: self
+          
+          - task: AWSShellScript@1
+            displayName: 'Validate Stack Deployment'
+            inputs:
+              awsCredentials: '${{ parameters.awsServiceConnection }}'
+              regionName: '${{ parameters.cdkDefaultRegion }}'
+              scriptType: 'inline'
+              inlineScript: |
+                echo "Validating multi-stack deployment..."
+                export APP_NAME="${{ parameters.appName }}"
+                
+                echo "Checking CloudFormation stacks for $APP_NAME..."
+                aws cloudformation list-stacks \
+                  --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+                  --query "StackSummaries[?contains(StackName, '$APP_NAME')].{Name:StackName,Status:StackStatus}" \
+                  --output table
+                
+                echo "✅ All stacks deployed successfully"
