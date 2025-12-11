@@ -1,0 +1,99 @@
+name: Selenium Grid Tests - Self-Hosted Runner
+
+on:
+  workflow_run:
+    workflows: ["Test Suite"]
+    types: [completed]
+    branches: [main, develop]
+  
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'homepage-links'
+        type: choice
+        options:
+        - homepage-links
+        - full-automation-suite
+        - all-tests
+
+env:
+  USE_SELENIUM_GRID: true
+  SELENIUM_HUB_URL: http://192.168.1.33:4444
+  SELENIUM_BROWSER: chrome
+  PYTHONHTTPSVERIFY: 0
+
+jobs:
+  selenium-grid-tests:
+    # Use self-hosted runner that can access your private network
+    runs-on: self-hosted
+    
+    # Only run if the triggering workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Verify Selenium Grid connectivity
+      run: |
+        echo "Testing Selenium Grid connectivity on Linux..."
+        
+        # Test grid connectivity using curl (Linux command)
+        if curl -f --connect-timeout 10 --max-time 30 "$SELENIUM_HUB_URL/wd/hub/status"; then
+          echo "✅ Selenium Grid is accessible"
+        else
+          echo "❌ Selenium Grid is not accessible"
+          exit 1
+        fi
+    
+    - name: Run Selenium Grid Tests on Linux
+      run: |
+        echo "🐧 Running on Linux GitHub Actions runner"
+        echo "🌐 Grid Hub: $SELENIUM_HUB_URL"
+        
+        # Set environment variables for Linux
+        export USE_SELENIUM_GRID=true
+        export SELENIUM_HUB_URL=http://192.168.1.33:4444
+        export SELENIUM_BROWSER=chrome
+        export PYTHONHTTPSVERIFY=0
+        
+        # Run tests based on input
+        case "${{ github.event.inputs.test_suite || 'homepage-links' }}" in
+          "homepage-links")
+            pytest test_selenium_grid_uc001.py -v -s \
+              --html=reports/linux_selenium_grid_homepage.html \
+              --self-contained-html
+            ;;
+          "full-automation-suite")
+            python run_complete_automation.py
+            ;;
+          "all-tests")
+            pytest test_selenium_grid_uc001.py final_automation/generated_tests/ -v -s \
+              --html=reports/linux_selenium_grid_all.html \
+              --self-contained-html \
+              -n auto --dist worksteal
+            ;;
+        esac
+    
+    - name: Upload Linux Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: linux-selenium-grid-results
+        path: |
+          reports/linux_selenium_grid_*.html
+          reports/selenium_grid_*.json
+          reports/*screenshot*.png
+        retention-days: 30
