@@ -1,0 +1,94 @@
+name: Simple Linux Chrome Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  simple-chrome-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        echo "📦 Installing Python dependencies..."
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+        echo "🎭 Installing Playwright with Chrome..."
+        playwright install chromium --with-deps
+    
+    - name: Verify Chrome installation
+      run: |
+        echo "🔍 Verifying Chrome installation..."
+        playwright --version
+        
+        # Test Chrome can start
+        python -c "
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    page = browser.new_page()
+    page.goto('https://www.google.com')
+    title = page.title()
+    print(f'✅ Chrome works! Page title: {title}')
+    browser.close()
+"
+    
+    - name: Run simple homepage test
+      run: |
+        echo "🚀 Running simple homepage link test..."
+        
+        # Ensure we're NOT using Selenium Grid
+        unset USE_SELENIUM_GRID
+        export PLAYWRIGHT_HEADLESS=true
+        
+        # Create reports directory
+        mkdir -p reports
+        
+        # Run a simple test
+        pytest generated_tests/test_homepage_links.py -v -s \
+          --html=reports/simple_chrome_test.html \
+          --self-contained-html \
+          --maxfail=3 \
+          -x
+    
+    - name: Check results
+      if: always()
+      run: |
+        echo "📊 Test Results:"
+        
+        if [ -f "reports/simple_chrome_test.html" ]; then
+          echo "✅ HTML report generated successfully"
+          ls -la reports/
+        else
+          echo "❌ No HTML report found"
+        fi
+        
+        # Check for any JSON reports
+        if ls reports/*.json 1> /dev/null 2>&1; then
+          echo "📋 JSON reports found:"
+          for json_file in reports/*.json; do
+            echo "  - $(basename $json_file)"
+            if command -v jq > /dev/null; then
+              TOTAL=$(jq -r '.total_links // "N/A"' "$json_file" 2>/dev/null)
+              echo "    Total links: $TOTAL"
+            fi
+          done
+        fi
+    
+    - name: Upload results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: simple-chrome-test-results
+        path: |
+          reports/
+          screenshots/
