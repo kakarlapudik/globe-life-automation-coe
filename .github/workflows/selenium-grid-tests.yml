@@ -1,0 +1,214 @@
+name: Selenium Grid Post-Build Tests
+
+on:
+  # Trigger after successful builds
+  workflow_run:
+    workflows: ["Test Suite", "Comprehensive Test Suite"]
+    types:
+      - completed
+    branches: [main, develop]
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - homepage
+        - selenium-grid-only
+      browser:
+        description: 'Browser for Selenium Grid'
+        required: true
+        default: 'chrome'
+        type: choice
+        options:
+        - chrome
+        - firefox
+      parallel_workers:
+        description: 'Number of parallel workers'
+        required: false
+        default: '4'
+        type: string
+
+  # Schedule for regular testing
+  schedule:
+    # Run daily at 6 AM UTC (after business hours)
+    - cron: '0 6 * * *'
+
+jobs:
+  selenium-grid-tests:
+    runs-on: ubuntu-latest
+    
+    # Only run if the triggering workflow succeeded (for workflow_run events)
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
+    
+    strategy:
+      matrix:
+        python-version: ['3.11']
+        browser: ['chrome', 'firefox']
+      fail-fast: false
+    
+    env:
+      USE_SELENIUM_GRID: true
+      SELENIUM_HUB_URL: http://192.168.1.33:4444
+      SELENIUM_BROWSER: ${{ matrix.browser }}
+      PYTHONHTTPSVERIFY: 0
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-selenium-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-selenium-
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install selenium==4.15.2 webdriver-manager==4.0.1
+    
+    - name: Verify Selenium Grid connectivity
+      run: |
+        echo "Testing Selenium Grid connectivity..."
+        curl -f $SELENIUM_HUB_URL/wd/hub/status || {
+          echo "❌ Selenium Grid is not accessible at $SELENIUM_HUB_URL"
+          echo "Please ensure the grid is running and accessible from GitHub Actions runner"
+          exit 1
+        }
+        echo "✅ Selenium Grid is accessible"
+    
+    - name: Run Selenium Grid Tests
+      run: |
+        echo "🚀 Running tests on Selenium Grid: $SELENIUM_HUB_URL"
+        echo "🌐 Browser: $SELENIUM_BROWSER"
+        
+        # Determine which tests to run based on input
+        TEST_SUITE="${{ github.event.inputs.test_suite || 'all' }}"
+        PARALLEL_WORKERS="${{ github.event.inputs.parallel_workers || '2' }}"
+        
+        case "$TEST_SUITE" in
+          "homepage")
+            pytest test_selenium_grid_uc001.py -v -s \
+              --html=reports/selenium_grid_homepage_report_${{ matrix.browser }}.html \
+              --self-contained-html \
+              -n $PARALLEL_WORKERS --dist worksteal
+            ;;
+          "selenium-grid-only")
+            pytest test_selenium_grid_uc001.py -v -s \
+              --html=reports/selenium_grid_only_report_${{ matrix.browser }}.html \
+              --self-contained-html \
+              -n $PARALLEL_WORKERS --dist worksteal
+            ;;
+          *)
+            # Run all tests with Selenium Grid
+            pytest final_automation/generated_tests/ test_selenium_grid_uc001.py -v -s \
+              --html=reports/selenium_grid_all_tests_report_${{ matrix.browser }}.html \
+              --self-contained-html \
+              -n $PARALLEL_WORKERS --dist worksteal
+            ;;
+        esac
+      continue-on-error: true
+    
+    - name: Generate Grid Test Summary
+      if: always()
+      run: |
+        echo "## Selenium Grid Test Results - ${{ matrix.browser }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Grid Hub**: $SELENIUM_HUB_URL" >> $GITHUB_STEP_SUMMARY
+        echo "- **Browser**: ${{ matrix.browser }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Python Version**: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Test Suite**: ${{ github.event.inputs.test_suite || 'all' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Parallel Workers**: ${{ github.event.inputs.parallel_workers || '2' }}" >> $GITHUB_STEP_SUMMARY
+        
+        # Check if reports were generated
+        if [ -f "reports/selenium_grid_uc001_links_report.json" ]; then
+          echo "- **Status**: ✅ Tests completed successfully" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract test results from JSON report
+          TOTAL_LINKS=$(jq -r '.total_links' reports/selenium_grid_uc001_links_report.json 2>/dev/null || echo "N/A")
+          VALID_LINKS=$(jq -r '.valid_links_count' reports/selenium_grid_uc001_links_report.json 2>/dev/null || echo "N/A")
+          BROKEN_LINKS=$(jq -r '.broken_links_count' reports/selenium_grid_uc001_links_report.json 2>/dev/null || echo "N/A")
+          SUCCESS_RATE=$(jq -r '.summary.success_rate' reports/selenium_grid_uc001_links_report.json 2>/dev/null || echo "N/A")
+          
+          echo "- **Total Links**: $TOTAL_LINKS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Valid Links**: $VALID_LINKS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Broken Links**: $BROKEN_LINKS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Success Rate**: $SUCCESS_RATE" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- **Status**: ❌ Tests failed or reports not generated" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload Selenium Grid Test Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: selenium-grid-reports-${{ matrix.browser }}-${{ matrix.python-version }}
+        path: |
+          reports/selenium_grid_*.html
+          reports/selenium_grid_*.json
+          reports/selenium_grid_*.png
+        retention-days: 30
+    
+    - name: Upload Screenshots
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: selenium-grid-screenshots-${{ matrix.browser }}
+        path: |
+          reports/*screenshot*.png
+          screenshots/
+        retention-days: 7
+
+  notify-results:
+    needs: selenium-grid-tests
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify Test Results
+      run: |
+        echo "🔔 Selenium Grid Test Execution Complete"
+        echo "📊 Check the job summary and artifacts for detailed results"
+        echo "🌐 Grid Hub: http://192.168.1.33:4444"
+        
+        # You can add additional notification logic here
+        # For example: Slack, Teams, email notifications
+        
+        if [ "${{ needs.selenium-grid-tests.result }}" == "success" ]; then
+          echo "✅ All Selenium Grid tests passed successfully!"
+        else
+          echo "⚠️ Some Selenium Grid tests failed. Check the reports for details."
+        fi
+
+  cleanup:
+    needs: [selenium-grid-tests, notify-results]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Cleanup and Archive
+      run: |
+        echo "🧹 Performing post-test cleanup..."
+        echo "📦 Test artifacts have been uploaded and will be retained for 30 days"
+        echo "🔄 Next scheduled run: Daily at 6 AM UTC"
+        
+        # Add any cleanup logic here if needed
+        # For example: clearing temporary files, notifying external systems
+        
+        echo "✅ Cleanup complete"

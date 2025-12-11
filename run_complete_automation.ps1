@@ -52,7 +52,22 @@ if (-not $success) {
 
 # Step 2: Run all generated tests with HTML reporting (parallel execution)
 Write-Banner "Step 2: Execute All Generated Tests in Parallel"
-$success = Run-Command -Command "pytest ./final_automation/generated_tests/ -v -s --html=reports/complete_automation_report.html --self-contained-html -n auto --dist worksteal" -Description "Running all AI-generated link validation tests in parallel"
+
+# Check if Selenium Grid should be used
+$useSeleniumGrid = $env:USE_SELENIUM_GRID -eq "true"
+$seleniumHubUrl = if ($env:SELENIUM_HUB_URL) { $env:SELENIUM_HUB_URL } else { "http://192.168.1.33:4444" }
+
+if ($useSeleniumGrid) {
+    Write-Host "🌐 Using Selenium Grid: $seleniumHubUrl" -ForegroundColor Cyan
+    $env:USE_SELENIUM_GRID = "true"
+    $env:SELENIUM_HUB_URL = $seleniumHubUrl
+    $env:SELENIUM_BROWSER = if ($env:SELENIUM_BROWSER) { $env:SELENIUM_BROWSER } else { "chrome" }
+    
+    $success = Run-Command -Command "pytest ./final_automation/generated_tests/ -v -s --html=reports/complete_automation_report.html --self-contained-html -n auto --dist worksteal --confcutdir=. -p conftest_selenium_grid" -Description "Running all AI-generated link validation tests in parallel on Selenium Grid"
+} else {
+    Write-Host "🖥️  Using local Playwright execution" -ForegroundColor Cyan
+    $success = Run-Command -Command "pytest ./final_automation/generated_tests/ -v -s --html=reports/complete_automation_report.html --self-contained-html -n auto --dist worksteal" -Description "Running all AI-generated link validation tests in parallel with Playwright"
+}
 
 # Step 3: Generate summary report
 Write-Banner "Step 3: Generate Summary Report"
@@ -79,6 +94,35 @@ if ($success) {
     Write-Host "✅ All tests completed successfully!" -ForegroundColor Green
 } else {
     Write-Host "⚠️  Some tests may have failed. Check the reports for details." -ForegroundColor Yellow
+}
+
+# Step 4: Commit and push changes to remote repository
+Write-Banner "Step 4: Commit and Push Changes to Remote Repository"
+
+# Add all changes to git
+$gitAddSuccess = Run-Command -Command "git add ." -Description "Adding all changes to git staging area"
+
+if ($gitAddSuccess) {
+    # Create commit message with timestamp and test results
+    $commitMessage = "Automated test execution - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - $(if ($success) { 'PASSED' } else { 'PARTIAL' })"
+    
+    # Commit changes
+    $gitCommitSuccess = Run-Command -Command "git commit -m `"$commitMessage`"" -Description "Committing changes to local repository"
+    
+    if ($gitCommitSuccess) {
+        # Push to remote repository
+        $gitPushSuccess = Run-Command -Command "git push origin HEAD" -Description "Pushing changes to remote repository (https://github.com/kakarlapudik/globe-life-automation-coe)"
+        
+        if ($gitPushSuccess) {
+            Write-Host "✅ Changes successfully pushed to remote repository!" -ForegroundColor Green
+        } else {
+            Write-Host "⚠️  Failed to push to remote repository. Check network connection and credentials." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "ℹ️  No changes to commit or commit failed." -ForegroundColor Blue
+    }
+} else {
+    Write-Host "⚠️  Failed to add changes to git staging area." -ForegroundColor Yellow
 }
 
 # Always try to open the main report (regardless of test results)
