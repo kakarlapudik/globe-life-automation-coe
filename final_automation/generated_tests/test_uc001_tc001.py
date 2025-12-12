@@ -1,8 +1,8 @@
 """
-Test Case: Verify Globe Life Investor Relations Homepage Links - Positive Flow
+Test Case: Only homepage content links (main, hero, featured sections) - Positive Flow
 Test ID: UC001_TC001
-Description: Verify verify globe life investor relations homepage links works correctly with valid inputs
-Automation Priority: Medium
+Description: Verify only homepage content links (main, hero, featured sections) works correctly with valid inputs
+Automation Priority: Low
 """
 
 import pytest
@@ -15,7 +15,7 @@ from playwright.sync_api import Page, expect
 
 class TestUC001_TC001:
     """
-    Verify Globe Life Investor Relations Homepage Links - Positive Flow
+    Only homepage content links (main, hero, featured sections) - Positive Flow
     """
     
     @pytest.fixture(autouse=True)
@@ -32,7 +32,7 @@ class TestUC001_TC001:
     
     def test_uc001_tc001_positive_flow(self):
         """
-        Test: Verify Globe Life Investor Relations Homepage Links - Positive Flow
+        Test: Only homepage content links (main, hero, featured sections) - Positive Flow
         Expected: Comprehensive link validation with detailed reporting
         """
         page = self.page

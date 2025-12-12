@@ -1,5 +1,5 @@
-Use Case 1: Verify Globe Life Investor Relations Homepage Links
-Description: Launch the Globe Life investor relations website and verify all links on the home page are working and return HTTP status code 200
+Use Case 1: Verify Globe Life Investor Relations Homepage Content Links
+Description: Launch the Globe Life investor relations website and verify only homepage-specific content links (main content area, hero section, featured content) are working and return HTTP status code 200
 URL: https://investors.globelifeinsurance.com/
 
 Preconditions:
@@ -10,64 +10,87 @@ Preconditions:
 Steps:
 1. Navigate to https://investors.globelifeinsurance.com/
 2. Wait for page to load completely
-3. Extract all links (anchor tags) from the homepage using page.locator("a[href]").all()
-4. For each link, extract href attribute and validate URL
-5. Send HTTP HEAD request to verify status code using requests library
-6. Log each link validation result with URL and status code
-7. Print comprehensive summary showing total links, broken links count
-8. Save detailed JSON report with all link validation results
-9. Assert that no broken links are found (except acceptable 403 status codes)
+3. Extract ONLY homepage-specific links from main content areas using selectors: main a[href], .hero a[href], .content a[href], .homepage a[href], .banner a[href], .featured a[href]
+4. Exclude navigation menu links and footer links (tested separately)
+5. If no specific homepage links found, use main content area links only
+6. Limit to first 10 links to focus on homepage content
+7. For each homepage link, extract href attribute, link text, and validate URL
+8. Send HTTP HEAD request to verify status code using requests library
+9. Log each link validation result with URL, status code, response time, and link text
+10. Save detailed JSON report with homepage-specific link validation results including:
+    - Test case ID and description
+    - List of all homepage links found with full details
+    - Validation results for each link (URL, text, status, response time)
+    - Summary statistics (total links, valid count, broken count, success rate)
+    - Selectors used for link extraction
+    - Test execution timestamp
+11. Assert that no broken homepage content links are found
 
 Expected Results:
 - Homepage loads successfully
-- All links are extracted correctly
-- All links return HTTP status code 200
-- No broken links are found
-- Validation report is generated
-- HTML report includes complete list of all validated links with status codes
-- HTML report shows link validation summary with pass/fail counts
+- Only homepage content links are extracted (not navigation/footer)
+- All homepage content links return HTTP status code 200 or acceptable redirects (301, 302)
+- No broken homepage links are found
+- Detailed JSON report generated with complete link inventory including:
+  * Each homepage link URL, text, original href, status code, response time
+  * Test scope clearly identified as "homepage content only"
+  * Selectors used for link extraction documented
+  * Summary statistics with success rate percentage
+- Validation report focuses exclusively on homepage content links
+- Report excludes navigation menu and footer links (tested in other use cases)
+- Console output shows detailed validation progress for each homepage link
 
 Priority: High
 
-Use Case 2: Comprehensive Site-Wide Link Validation
-Description: Crawl the entire Globe Life investor relations website, discover all pages, and validate all links across the entire site
+Use Case 2: Comprehensive Site-Wide Internal Link Crawling and Validation
+Description: Crawl multiple pages of the Globe Life investor relations website by following internal links, discover connected pages, and validate all links across the crawled pages
 URL: https://investors.globelifeinsurance.com/
 
 Preconditions:
 - Internet connection is available
 - Website is accessible
 - Browser with JavaScript support is available
-- Sufficient time allocated for full site crawl
+- Sufficient time allocated for multi-page crawl
 
 Steps:
 1. Navigate to https://investors.globelifeinsurance.com/
 2. Extract all links from the homepage
-3. Click each internal link to navigate to new pages
-4. For each new page discovered, extract all links
-5. Track visited pages to avoid infinite loops
-6. For each link found, verify HTTP status code
-7. Validate both internal and external links
-8. Handle dynamic content loaded via JavaScript
-9. Click navigation menus and dropdowns to discover hidden pages
-10. Validate links in footer, header, and sidebar sections
-11. Generate comprehensive report with all findings
+3. Identify internal links (same domain) for crawling
+4. Visit up to 5 internal pages to limit test execution time
+5. For each visited page, extract all links (internal and external) with full details
+6. Track visited pages to avoid infinite loops
+7. Add new internal links to crawl queue
+8. For each link found across all pages, verify HTTP status code and response time
+9. Validate both internal and external links from all crawled pages
+10. Generate comprehensive report with crawl results and detailed link validation including:
+    - Complete list of pages crawled with URLs
+    - All links found on each page with source page attribution
+    - Link categorization (internal vs external)
+    - Validation results for each link (URL, text, status, response time, source page)
+    - Crawl statistics (pages visited, total links found, internal/external breakdown)
+    - Test execution timestamp and performance metrics
+11. Include source page information for each validated link with full traceability
 
 Expected Results:
-- All pages on the site are discovered and visited
-- All links across all pages return status code 200
-- Navigation menus and dropdowns are tested
-- Dynamic content links are validated
-- External links are verified
-- Comprehensive report includes page hierarchy
-- Broken links are identified with page location
-- Report includes total pages crawled and links validated
-- HTML report contains detailed list of all validated links organized by page
-- HTML report shows link validation results with status codes and response times
+- Multiple internal pages are discovered and visited (up to 5 pages)
+- All links from all crawled pages are validated with complete details
+- Both internal and external links return appropriate status codes (200, 301, 302)
+- Crawl queue prevents infinite loops and tracks visited pages
+- Detailed JSON report generated with comprehensive crawl data including:
+  * Complete list of crawled pages with URLs
+  * All links found organized by source page
+  * Link categorization (internal vs external) with counts
+  * Validation results for each link with full details (URL, text, status, response time, source page)
+  * Crawl performance metrics and statistics
+- Broken links are identified with source page location and full context
+- Report includes total pages crawled and links validated per page with detailed breakdown
+- Console output shows crawling progress and validation results for each page
+- Test scope clearly identified as "multi-page site crawling" with page limits documented
 
 Priority: High
 
-Use Case 3: Navigation Menu Link Validation
-Description: Validate all links in the main navigation menu including dropdowns and submenus
+Use Case 3: Navigation Menu and Header Link Validation
+Description: Validate ONLY links in the main navigation menu, header navigation, and dropdown menus (excluding footer and content links)
 URL: https://investors.globelifeinsurance.com/
 
 Preconditions:
@@ -76,124 +99,172 @@ Preconditions:
 
 Steps:
 1. Navigate to https://investors.globelifeinsurance.com/
-2. Identify main navigation menu
-3. Hover over each menu item to reveal dropdowns
-4. Extract all menu and submenu links
-5. Click each menu link and verify page loads
-6. Verify each destination page returns status code 200
-7. Validate breadcrumb navigation on each page
-8. Test back button functionality
-9. Verify menu remains consistent across pages
+2. Identify navigation-specific elements using selectors: nav a[href], .navbar a[href], .navigation a[href], .menu a[href], header nav a[href], [role='navigation'] a[href]
+3. Hover over navigation menu items to reveal dropdown menus and submenus
+4. Extract all navigation and dropdown menu links with full details (URL, text, original href)
+5. Exclude footer links, content links, and social media links (tested separately)
+6. Remove duplicate navigation links while preserving link details
+7. For each navigation link, verify HTTP status code and measure response time
+8. Focus validation exclusively on navigation structure links
+9. Generate detailed JSON report specific to navigation menu validation including:
+   - Complete inventory of navigation links found
+   - Selectors used for navigation link extraction
+   - Dropdown menu discovery results
+   - Validation results for each navigation link (URL, text, status, response time)
+   - Navigation-specific statistics and success rate
+   - Test scope clearly identified as "navigation menu only"
+   - Exclusion of non-navigation links documented
 
 Expected Results:
-- All navigation menu items are clickable
-- All dropdown menus expand correctly
-- All menu links navigate to valid pages
-- All pages return status code 200
-- Breadcrumbs are accurate
-- Navigation is consistent across site
-- HTML report lists all navigation menu links with validation status
-- HTML report includes dropdown menu structure and link validation results
+- Only navigation menu links are extracted and validated (no content/footer links)
+- All dropdown menus are discovered through hover interactions with detailed logging
+- All navigation links return appropriate status codes (200, 301, 302, 403 acceptable)
+- Duplicate navigation links are removed while preserving unique link details
+- Detailed JSON report generated specifically for navigation validation including:
+  * Complete list of navigation links with full details
+  * Dropdown menu structure and discovery method
+  * Selectors used for navigation link extraction
+  * Validation results with status codes and response times
+  * Navigation-specific success rate and statistics
+- Console output shows navigation link discovery and validation progress
+- Test scope clearly documented as "navigation menu and header links only"
+- Content area, footer, and social media links are explicitly excluded and documented as out-of-scope
 
 Priority: High
 
-Use Case 4: Footer and Utility Links Validation
-Description: Validate all links in footer, social media icons, and utility navigation
+Use Case 4: Footer, Social Media, and Utility Links Validation
+Description: Validate ONLY links in footer sections, social media icons, utility navigation, and legal links (excluding navigation menu and main content links)
 URL: https://investors.globelifeinsurance.com/
 
 Preconditions:
 - Website is accessible
-- External sites are reachable
+- External social media sites are reachable
 
 Steps:
 1. Navigate to https://investors.globelifeinsurance.com/
-2. Scroll to footer section
-3. Extract all footer links
-4. Validate social media icon links
-5. Test utility links (Privacy Policy, Terms, Contact, etc.)
-6. Verify external links open correctly
-7. Check for broken social media links
-8. Validate email and phone links
-9. Test document download links (PDFs, reports)
+2. Scroll to footer section to ensure it's loaded and visible
+3. Extract ONLY footer-specific links using selectors: footer a[href], .footer a[href], .social a[href], .utility a[href], .legal a[href]
+4. Include social media links: [href*='facebook'], [href*='twitter'], [href*='linkedin'], [href*='youtube'], [href*='instagram']
+5. Include utility links: [href*='privacy'], [href*='terms'], [href*='contact']
+6. Include email and phone links: [href='mailto:'], [href^='tel:']
+7. Exclude navigation menu links and main content links (tested separately)
+8. Categorize links by type: social media, utility, legal, contact with detailed classification
+9. Validate each footer/utility link for appropriate status codes and response times
+10. Generate detailed JSON report specific to footer and utility link validation including:
+    - Complete inventory of footer links organized by category
+    - Link categorization (social media, utility, legal, contact) with counts
+    - Selectors used for footer link extraction
+    - Validation results for each link (URL, text, category, status, response time)
+    - Footer-specific statistics and success rate by category
+    - Test scope clearly identified as "footer and utility links only"
+    - Exclusion of navigation and content links documented
 
 Expected Results:
-- All footer links are valid
-- Social media links open correct profiles
-- Utility pages load successfully
-- External links return status code 200
-- Email links have proper mailto format
-- Document downloads are accessible
-- No broken links in footer
-- HTML report displays all footer links with validation status
-- HTML report categorizes links by type (social media, utility, documents, external)
+- Only footer, social media, and utility links are extracted (no navigation/content links)
+- Social media links are properly categorized and validated with platform identification
+- Utility pages (Privacy, Terms, Contact) load successfully with appropriate status codes
+- External social media links return appropriate status codes (200, 301, 302, 403 acceptable)
+- Email and phone links are validated for proper format and accessibility
+- Navigation and content links are explicitly excluded and documented as out-of-scope
+- Detailed JSON report generated specifically for footer validation including:
+  * Complete footer link inventory organized by category (social, utility, legal, contact)
+  * Link categorization with counts and category-specific success rates
+  * Validation results with full details for each footer link
+  * Footer-specific selectors used and discovery methods
+  * Category-wise statistics and overall footer link success rate
+- Console output shows footer link discovery and validation progress by category
+- Test scope clearly documented as "footer, social media, and utility links only"
 
 Priority: Medium
 
-Use Case 5: Dynamic Content and AJAX Link Validation
-Description: Validate links that are loaded dynamically via JavaScript or AJAX
+Use Case 5: Dynamic Content and AJAX Link Discovery and Validation
+Description: Validate ONLY links that are loaded dynamically via JavaScript, AJAX, or user interactions (excluding static links already tested in other use cases)
 URL: https://investors.globelifeinsurance.com/
 
 Preconditions:
 - JavaScript is enabled
-- Browser supports dynamic content loading
+- Browser supports dynamic content loading and user interactions
 
 Steps:
 1. Navigate to https://investors.globelifeinsurance.com/
-2. Wait for all dynamic content to load
-3. Identify AJAX-loaded sections
-4. Trigger dynamic content loading (scroll, click, etc.)
-5. Extract links from dynamically loaded content
-6. Validate each dynamic link
-7. Test pagination links if present
-8. Validate "Load More" or infinite scroll links
-9. Test search results links
-10. Validate filtered content links
+2. Record initial static links count for comparison and baseline
+3. Trigger dynamic content loading through multiple interactions with detailed logging:
+   - Scroll to bottom to trigger lazy loading
+   - Click "Load More" or "Show More" buttons if present
+   - Click pagination links if available
+   - Hover over elements to reveal hidden content
+   - Click tabs or accordion elements
+   - Interact with expandable sections
+4. Compare link counts before and after each interaction with detailed tracking
+5. Extract ONLY newly discovered links from dynamic interactions with full details
+6. Include AJAX-specific selectors: [data-ajax], [data-load], .ajax-content, .dynamic-content
+7. Exclude static navigation, footer, and content links (tested separately)
+8. Validate each dynamically discovered link with response time measurement
+9. Generate detailed JSON report specific to dynamic content validation including:
+   - Initial static link count vs final dynamic link count
+   - Complete inventory of dynamically loaded links with trigger information
+   - Interaction methods used and their success/failure status
+   - Validation results for each dynamic link (URL, text, trigger method, status, response time)
+   - Dynamic content discovery statistics and success rate
+   - Test scope clearly identified as "dynamic and AJAX content only"
+   - Documentation of static link exclusion and interaction methods used
 
 Expected Results:
-- All dynamic content loads successfully
-- AJAX-loaded links are valid
-- Pagination works correctly
-- Search functionality returns valid links
-- Filtered content links are accessible
-- All dynamic links return status code 200
-- HTML report includes all dynamically loaded links with validation results
-- HTML report shows AJAX and JavaScript-generated link validation status
+- Dynamic content triggers are successfully executed with detailed interaction logging
+- Newly loaded links are identified and separated from static links with clear attribution
+- AJAX and JavaScript-generated links are properly discovered and documented
+- Pagination and "Load More" functionality works correctly with interaction tracking
+- Dynamic links return appropriate status codes (200, 301, 302, 403 acceptable)
+- Static links are explicitly excluded from this validation with documentation
+- Detailed JSON report generated specifically for dynamic content including:
+  * Complete inventory of dynamically loaded links with trigger attribution
+  * Interaction methods attempted and their success/failure status
+  * Before/after link counts for each interaction
+  * Validation results for each dynamic link with full details
+  * Dynamic content discovery statistics and interaction success rates
+- Console output shows dynamic content discovery progress and interaction results
+- Test scope clearly documented as "dynamic and AJAX content only"
+- Report indicates if no dynamic content was found (acceptable result) with explanation
+- Documentation of all interaction methods attempted and their outcomes
 
 Priority: Medium
 
-Use Case 6: Automatic Test Report Launch and Display
-Description: Automatically launch and display HTML test reports in the default browser after test execution completes, regardless of test results
+Use Case 6: Automatic Test Report Launch and Display Functionality
+Description: Test the automatic launching and display of HTML test reports in the default browser after test execution completes, focusing on the report launch mechanism rather than link validation
 URL: Local file system (generated HTML reports)
 
 Preconditions:
-- Test execution has completed
-- HTML report has been generated
+- Test execution framework is available
+- HTML report generation capability exists
 - Default browser is available on the system
 - Operating system supports file association with HTML files
 
 Steps:
-1. Complete test execution (all test cases)
-2. Generate HTML report with test results
-3. Determine operating system (Windows, Linux, Mac)
+1. Create a sample HTML test report file for testing
+2. Determine current operating system (Windows, Linux, Mac)
+3. Test appropriate system command for OS:
+   - Windows: os.system("start report.html")
+   - Mac: os.system("open report.html") 
+   - Linux: os.system("xdg-open report.html")
 4. Attempt to launch HTML report in default browser
-5. Use appropriate system command for OS (start/open/xdg-open)
-6. Handle exceptions if browser launch fails
-7. Display success message when report opens
-8. Provide fallback instructions if auto-launch fails
-9. Log report launch attempt and result
-10. Ensure report launches regardless of test pass/fail status
+5. Handle exceptions if browser launch fails gracefully
+6. Log report launch attempt and result
+7. Verify report launch works regardless of test pass/fail status
+8. Test fallback behavior when browser launch fails
+9. Validate cross-platform compatibility
+10. Generate report about report launch functionality
 
 Expected Results:
-- HTML report opens automatically in default browser
-- Report launches even when some tests fail
-- Appropriate system command is used for each OS
-- Success message confirms report launch
-- Fallback instructions provided if launch fails
-- Report contains all test execution details
-- Report displays parallel execution results
-- Report shows test timing and performance metrics
-- User can immediately view test results without manual navigation
-- Consistent behavior across Windows, Linux, and Mac systems
+- HTML report launches automatically in default browser on all OS platforms
+- Appropriate system command is selected based on detected OS
+- Browser launch works even when previous tests have failed
+- Graceful error handling when browser launch fails
+- Success/failure messages are properly logged
+- Fallback instructions are provided when auto-launch fails
+- Cross-platform compatibility is maintained (Windows, Linux, Mac)
+- Report launch functionality is independent of test results
+- User receives immediate feedback about report launch status
+- Consistent behavior across different operating systems
 
 Priority: High
 
@@ -213,22 +284,29 @@ Test Data:
 - Browser Launch Failure Message: "[INFO] Could not auto-open report: {error}"
 
 Acceptance Criteria:
-- 100% of internal links must return status code 200 or valid redirect
+- Each test case must validate only links relevant to its specific scope:
+  * UC001: Only homepage content links (main, hero, featured sections)
+  * UC002: Internal links discovered through site crawling (max 5 pages)
+  * UC003: Only navigation menu and header links (including dropdowns)
+  * UC004: Only footer, social media, and utility links
+  * UC005: Only dynamically loaded links (AJAX, JavaScript-triggered)
+  * UC006: Report launch functionality testing (not link validation)
+- 100% of scope-specific links must return status code 200 or valid redirect (301, 302)
 - External links should return 200 or be flagged for review
-- Test must identify all unique pages on the site
-- Report must include page hierarchy and link relationships
-- Broken links must be reported with source page location
-- Test should complete within 30 minutes
-- Report must include link URL, status code, response time, and source page
+- Each test must exclude links tested by other use cases to avoid duplication
+- Broken links must be reported with source page location and test case scope
+- Each test should complete within 10 minutes (focused scope reduces execution time)
+- Report must include link URL, status code, response time, source page, and test case scope
 - Any link with status code 404, 500, or timeout should be flagged as critical failure
-- HTML report must display comprehensive list of all validated links
+- HTML report must display links organized by test case scope
 - HTML report must include interactive tables with sortable columns for link analysis
-- HTML report must show validation summary with total links, pass/fail counts, and execution time
-- HTML report must categorize links by type (internal, external, navigation, footer, dynamic)
-- HTML report must highlight broken links with clear visual indicators
+- HTML report must show validation summary per test case with total links, pass/fail counts, and execution time
+- HTML report must clearly categorize links by test case scope (homepage, navigation, footer, dynamic, sitewide)
+- HTML report must highlight broken links with clear visual indicators and scope identification
 - HTML report must launch automatically in default browser after test completion
-- Report launch must work regardless of test pass/fail status (always launch)
+- Report launch must work regardless of individual test pass/fail status (always launch)
 - System must use appropriate OS-specific command (start for Windows, open for Mac, xdg-open for Linux)
 - Fallback instructions must be provided if automatic launch fails
 - Report launch attempt must be logged with success/failure status
 - User must be able to view results immediately without manual file navigation
+- Test execution must avoid link validation overlap between different use cases

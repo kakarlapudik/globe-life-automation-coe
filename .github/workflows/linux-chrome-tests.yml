@@ -374,7 +374,54 @@ except Exception as e:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "🔗 **Artifacts**: Check the uploaded artifacts for detailed reports" >> $GITHUB_STEP_SUMMARY
     
-    - name: Upload test reports
+    - name: Generate final comprehensive report
+      if: always()
+      run: |
+        echo "📊 Generating comprehensive final report for Linux Chrome tests..."
+        
+        # Create final reports directory
+        mkdir -p linux_chrome_final_reports
+        
+        # Generate enhanced report if available
+        if [ -f "generate_enhanced_html_report.py" ]; then
+          python generate_enhanced_html_report.py || echo "Enhanced report generation failed"
+        fi
+        
+        # Copy all reports and artifacts
+        cp -r reports/* linux_chrome_final_reports/ 2>/dev/null || echo "No reports directory"
+        cp -r screenshots/* linux_chrome_final_reports/screenshots/ 2>/dev/null || echo "No screenshots"
+        cp -r test_videos/* linux_chrome_final_reports/test_videos/ 2>/dev/null || echo "No test videos"
+        cp -r logs/* linux_chrome_final_reports/logs/ 2>/dev/null || echo "No logs"
+        
+        # Generate execution summary
+        echo "# Linux Chrome Test Execution Report" > linux_chrome_final_reports/CHROME_EXECUTION_SUMMARY.md
+        echo "**Execution Date**: $(date)" >> linux_chrome_final_reports/CHROME_EXECUTION_SUMMARY.md
+        echo "**Test Suite**: ${{ github.event.inputs.test_suite || 'homepage-links' }}" >> linux_chrome_final_reports/CHROME_EXECUTION_SUMMARY.md
+        echo "**Headless Mode**: ${{ github.event.inputs.headless_mode || 'true' }}" >> linux_chrome_final_reports/CHROME_EXECUTION_SUMMARY.md
+        echo "**Parallel Workers**: ${{ github.event.inputs.parallel_workers || 'auto' }}" >> linux_chrome_final_reports/CHROME_EXECUTION_SUMMARY.md
+        echo "**Chrome Path**: $PLAYWRIGHT_CHROME_EXECUTABLE" >> linux_chrome_final_reports/CHROME_EXECUTION_SUMMARY.md
+        echo "" >> linux_chrome_final_reports/CHROME_EXECUTION_SUMMARY.md
+        
+        # List all files in final report
+        echo "## Generated Artifacts" >> linux_chrome_final_reports/CHROME_EXECUTION_SUMMARY.md
+        find linux_chrome_final_reports -type f >> linux_chrome_final_reports/CHROME_EXECUTION_SUMMARY.md
+        
+        echo "✅ Comprehensive final report generated"
+    
+    - name: Upload comprehensive Linux Chrome reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: linux-chrome-comprehensive-reports
+        path: |
+          linux_chrome_final_reports/
+          reports/
+          screenshots/
+          test_videos/
+          logs/
+        retention-days: 30
+    
+    - name: Upload test reports (legacy)
       uses: actions/upload-artifact@v4
       if: always()
       with:
