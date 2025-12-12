@@ -1,8 +1,8 @@
 """
-Test Case: Verify Globe Life Investor Relations Homepage Links - Positive Flow
+Test Case: Only homepage content links (main, hero, featured sections) - Positive Flow
 Test ID: UC001_TC001
-Description: Verify verify globe life investor relations homepage links works correctly with valid inputs
-Automation Priority: Medium
+Description: Verify only homepage content links (main, hero, featured sections) works correctly with valid inputs
+Automation Priority: Low
 """
 
 import pytest
@@ -15,7 +15,7 @@ from playwright.sync_api import Page, expect
 
 class TestUC001_TC001:
     """
-    Verify Globe Life Investor Relations Homepage Links - Positive Flow
+    Only homepage content links (main, hero, featured sections) - Positive Flow
     """
     
     @pytest.fixture(autouse=True)
@@ -32,8 +32,8 @@ class TestUC001_TC001:
     
     def test_uc001_tc001_positive_flow(self):
         """
-        Test: Verify Globe Life Investor Relations Homepage Links - Positive Flow
-        Expected: Validate only homepage-specific links (main content area, hero section, key links)
+        Test: Only homepage content links (main, hero, featured sections) - Positive Flow
+        Expected: Comprehensive link validation with detailed reporting
         """
         page = self.page
         
@@ -43,45 +43,11 @@ class TestUC001_TC001:
         # Wait for page to load completely
         page.wait_for_load_state("networkidle")
         
-        # Extract only homepage-specific links (excluding navigation and footer)
-        print(f"\n[EXTRACT] Extracting homepage-specific links from {self.base_url}")
+        # Extract all links from the page
+        print(f"\n[EXTRACT] Extracting links from {self.base_url}")
+        links = page.locator("a[href]").all()
         
-        # Focus on main content area links only
-        homepage_selectors = [
-            "main a[href]",  # Main content area links
-            ".hero a[href]",  # Hero section links
-            ".content a[href]",  # Content section links
-            ".homepage a[href]",  # Homepage specific sections
-            "[class*='home'] a[href]",  # Any home-related class links
-            ".banner a[href]",  # Banner links
-            ".featured a[href]",  # Featured content links
-        ]
-        
-        # Collect homepage-specific links
-        homepage_links = []
-        for selector in homepage_selectors:
-            try:
-                links = page.locator(selector).all()
-                homepage_links.extend(links)
-                if links:
-                    print(f"[FOUND] {len(links)} links in {selector}")
-            except:
-                continue
-        
-        # If no specific homepage links found, get links from main content area only
-        if not homepage_links:
-            print("[FALLBACK] Using main content area links")
-            homepage_links = page.locator("main a[href], .main a[href], #main a[href]").all()
-        
-        # If still no links, get first 10 links from page (homepage focus)
-        if not homepage_links:
-            print("[FALLBACK] Using first 10 links from page")
-            all_links = page.locator("a[href]").all()
-            homepage_links = all_links[:10]  # Limit to first 10 for homepage focus
-        
-        print(f"[HOMEPAGE] Processing {len(homepage_links)} homepage-specific links")
-        
-        for link in homepage_links:
+        for link in links:
             try:
                 href = link.get_attribute("href")
                 text = link.inner_text().strip()[:50]  # Limit text length

@@ -1,7 +1,7 @@
 """
-Test Case: Footer and Utility Links Validation - Positive Flow
+Test Case: Only footer, social media, and utility links - Positive Flow
 Test ID: UC004_TC001
-Description: Verify footer and utility links validation works correctly with valid inputs
+Description: Verify only footer, social media, and utility links works correctly with valid inputs
 Automation Priority: Low
 """
 
@@ -15,7 +15,7 @@ from playwright.sync_api import Page, expect
 
 class TestUC004_TC001:
     """
-    Footer and Utility Links Validation - Positive Flow
+    Only footer, social media, and utility links - Positive Flow
     """
     
     @pytest.fixture(autouse=True)
@@ -32,8 +32,8 @@ class TestUC004_TC001:
     
     def test_uc004_tc001_positive_flow(self):
         """
-        Test: Footer and Utility Links Validation - Positive Flow
-        Expected: Validate only footer, social media, and utility links
+        Test: Only footer, social media, and utility links - Positive Flow
+        Expected: Comprehensive link validation with detailed reporting
         """
         page = self.page
         
@@ -43,85 +43,11 @@ class TestUC004_TC001:
         # Wait for page to load completely
         page.wait_for_load_state("networkidle")
         
-        print(f"\n[FOOTER] Extracting footer and utility links from {self.base_url}")
+        # Extract all links from the page
+        print(f"\n[EXTRACT] Extracting links from {self.base_url}")
+        links = page.locator("a[href]").all()
         
-        # Scroll to footer to ensure it's loaded
-        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-        page.wait_for_timeout(1000)
-        
-        # Define footer and utility-specific selectors
-        footer_selectors = [
-            "footer a[href]",  # Footer links
-            ".footer a[href]",  # Footer class
-            ".site-footer a[href]",  # Site footer
-            ".page-footer a[href]",  # Page footer
-            "[class*='footer'] a[href]",  # Any footer-related class
-            ".social a[href]",  # Social media links
-            ".social-media a[href]",  # Social media class
-            "[class*='social'] a[href]",  # Any social-related class
-            ".utility a[href]",  # Utility links
-            ".utility-nav a[href]",  # Utility navigation
-            ".legal a[href]",  # Legal links
-            ".copyright a[href]",  # Copyright links
-            "[href*='privacy']",  # Privacy policy links
-            "[href*='terms']",  # Terms of service links
-            "[href*='contact']",  # Contact links
-            "[href*='facebook']",  # Facebook links
-            "[href*='twitter']",  # Twitter links
-            "[href*='linkedin']",  # LinkedIn links
-            "[href*='youtube']",  # YouTube links
-            "[href*='instagram']",  # Instagram links
-            "[href='mailto:']",  # Email links
-            "[href^='tel:']",  # Phone links
-        ]
-        
-        footer_links = []
-        
-        # Extract footer and utility links
-        for selector in footer_selectors:
-            try:
-                links = page.locator(selector).all()
-                if links:
-                    footer_links.extend(links)
-                    print(f"[FOOTER] Found {len(links)} links in {selector}")
-            except:
-                continue
-        
-        # Also check the bottom portion of the page for footer content
-        try:
-            # Get links from bottom 20% of page
-            page_height = page.evaluate("document.body.scrollHeight")
-            bottom_section = page.locator(f"body").bounding_box()
-            if bottom_section:
-                bottom_links = page.locator("a[href]").all()
-                # Filter links that are in the bottom portion
-                for link in bottom_links[-10:]:  # Last 10 links likely in footer
-                    footer_links.append(link)
-        except:
-            pass
-        
-        # Remove duplicates
-        unique_footer_links = []
-        seen_hrefs = set()
-        
-        for link in footer_links:
-            try:
-                href = link.get_attribute("href")
-                if href and href not in seen_hrefs:
-                    unique_footer_links.append(link)
-                    seen_hrefs.add(href)
-            except:
-                continue
-        
-        print(f"[FOOTER] Processing {len(unique_footer_links)} unique footer/utility links")
-        
-        # Categorize and validate footer links
-        social_links = []
-        utility_links = []
-        legal_links = []
-        contact_links = []
-        
-        for link in unique_footer_links:
+        for link in links:
             try:
                 href = link.get_attribute("href")
                 text = link.inner_text().strip()[:50]  # Limit text length

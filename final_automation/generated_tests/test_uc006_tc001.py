@@ -1,8 +1,8 @@
 """
-Test Case: Automatic Test Report Launch and Display - Positive Flow
+Test Case: Report launch functionality testing (not link validation) - Positive Flow
 Test ID: UC006_TC001
-Description: Verify automatic test report launch and display works correctly with valid inputs
-Automation Priority: Medium
+Description: Verify report launch functionality testing (not link validation) works correctly with valid inputs
+Automation Priority: Low
 """
 
 import pytest
@@ -15,7 +15,7 @@ from playwright.sync_api import Page, expect
 
 class TestUC006_TC001:
     """
-    Automatic Test Report Launch and Display - Positive Flow
+    Report launch functionality testing (not link validation) - Positive Flow
     """
     
     @pytest.fixture(autouse=True)
@@ -32,7 +32,7 @@ class TestUC006_TC001:
     
     def test_uc006_tc001_positive_flow(self):
         """
-        Test: Automatic Test Report Launch and Display - Positive Flow
+        Test: Report launch functionality testing (not link validation) - Positive Flow
         Expected: Comprehensive link validation with detailed reporting
         """
         page = self.page

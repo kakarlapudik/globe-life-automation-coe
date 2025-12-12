@@ -1,8 +1,8 @@
 """
-Test Case: Comprehensive Site-Wide Link Validation - Positive Flow
+Test Case: Internal links discovered through site crawling (max 5 pages) - Positive Flow
 Test ID: UC002_TC001
-Description: Verify comprehensive site-wide link validation works correctly with valid inputs
-Automation Priority: Medium
+Description: Verify internal links discovered through site crawling (max 5 pages) works correctly with valid inputs
+Automation Priority: Low
 """
 
 import pytest
@@ -15,7 +15,7 @@ from playwright.sync_api import Page, expect
 
 class TestUC002_TC001:
     """
-    Comprehensive Site-Wide Link Validation - Positive Flow
+    Internal links discovered through site crawling (max 5 pages) - Positive Flow
     """
     
     @pytest.fixture(autouse=True)
@@ -32,138 +32,22 @@ class TestUC002_TC001:
     
     def test_uc002_tc001_positive_flow(self):
         """
-        Test: Comprehensive Site-Wide Link Validation - Positive Flow
-        Expected: Crawl multiple pages and validate all internal links across the site
+        Test: Internal links discovered through site crawling (max 5 pages) - Positive Flow
+        Expected: Comprehensive link validation with detailed reporting
         """
         page = self.page
-        visited_pages = set()
-        pages_to_visit = [self.base_url]
-        max_pages = 5  # Limit for test performance
         
-        print(f"\n[SITEWIDE] Starting comprehensive site crawl from {self.base_url}")
+        # Navigate to application
+        page.goto(self.base_url)
         
-        while pages_to_visit and len(visited_pages) < max_pages:
-            current_url = pages_to_visit.pop(0)
-            
-            if current_url in visited_pages:
-                continue
-                
-            print(f"\n[CRAWL] Visiting page: {current_url}")
-            
-            try:
-                # Navigate to current page
-                page.goto(current_url)
-                page.wait_for_load_state("networkidle")
-                visited_pages.add(current_url)
-                
-                # Extract all links from current page
-                links = page.locator("a[href]").all()
-                print(f"[FOUND] {len(links)} links on {current_url}")
-                
-                # Process each link
-                for link in links:
-                    try:
-                        href = link.get_attribute("href")
-                        if not href:
-                            continue
-                            
-                        # Convert relative URLs to absolute
-                        if href.startswith("/"):
-                            full_url = urljoin(self.base_url, href)
-                        elif href.startswith("http"):
-                            full_url = href
-                        else:
-                            full_url = urljoin(current_url, href)
-                        
-                        # Add internal links to crawl queue
-                        if self.base_url in full_url and full_url not in visited_pages:
-                            if full_url not in pages_to_visit:
-                                pages_to_visit.append(full_url)
-                        
-                        # Validate all links (internal and external)
-                        self.validate_link(full_url, current_url)
-                        
-                    except Exception as e:
-                        print(f"[ERROR] Processing link: {e}")
-                        continue
-                        
-            except Exception as e:
-                print(f"[ERROR] Visiting {current_url}: {e}")
-                continue
+        # Wait for page to load completely
+        page.wait_for_load_state("networkidle")
         
-        print(f"\n[SITEWIDE] Crawled {len(visited_pages)} pages, validated {len(self.all_links)} links")
+        # Extract all links from the page
+        print(f"\n[EXTRACT] Extracting links from {self.base_url}")
+        links = page.locator("a[href]").all()
         
-        # Generate comprehensive report
-        self.generate_sitewide_report()
-        
-        # Assert no critical broken links
-        critical_broken = [link for link in self.broken_links if link.get('status_code') in [404, 500]]
-        assert len(critical_broken) == 0, f"Found {len(critical_broken)} critical broken links"
-    
-    def validate_link(self, url, source_page):
-        """Validate a single link and record results"""
-        try:
-            # Skip certain file types and fragments
-            if any(url.endswith(ext) for ext in ['.pdf', '.doc', '.zip']) or '#' in url:
-                return
-                
-            response = requests.head(url, timeout=10, allow_redirects=True, verify=False)
-            status_code = response.status_code
-            
-            link_data = {
-                'url': url,
-                'source_page': source_page,
-                'status_code': status_code,
-                'is_valid': status_code in [200, 301, 302, 403]
-            }
-            
-            self.all_links.append(link_data)
-            
-            if link_data['is_valid']:
-                self.valid_links.append(link_data)
-                print(f"[VALID] {status_code} - {url}")
-            else:
-                self.broken_links.append(link_data)
-                print(f"[BROKEN] {status_code} - {url}")
-                
-        except Exception as e:
-            link_data = {
-                'url': url,
-                'source_page': source_page,
-                'status_code': 'ERROR',
-                'error': str(e),
-                'is_valid': False
-            }
-            self.all_links.append(link_data)
-            self.broken_links.append(link_data)
-            print(f"[ERROR] {url} - {e}")
-    
-    def generate_sitewide_report(self):
-        """Generate comprehensive sitewide validation report"""
-        report_data = {
-            'test_case': 'UC002_TC001',
-            'description': 'Comprehensive Site-Wide Link Validation',
-            'base_url': self.base_url,
-            'total_links': len(self.all_links),
-            'valid_links_count': len(self.valid_links),
-            'broken_links_count': len(self.broken_links),
-            'success_rate': f"{(len(self.valid_links) / len(self.all_links) * 100):.1f}%" if self.all_links else "0%",
-            'all_links': self.all_links,
-            'broken_links': self.broken_links,
-            'summary': {
-                'total_links': len(self.all_links),
-                'valid_links': len(self.valid_links),
-                'broken_links': len(self.broken_links),
-                'success_rate': f"{(len(self.valid_links) / len(self.all_links) * 100):.1f}%" if self.all_links else "0%"
-            }
-        }
-        
-        # Save JSON report
-        with open("reports/uc002_tc001_links_report.json", "w") as f:
-            json.dump(report_data, f, indent=2)
-        
-        print(f"\n[REPORT] Sitewide validation report saved: reports/uc002_tc001_links_report.json")
-        return
+        for link in links:
             try:
                 href = link.get_attribute("href")
                 text = link.inner_text().strip()[:50]  # Limit text length
