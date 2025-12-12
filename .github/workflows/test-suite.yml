@@ -94,26 +94,25 @@ jobs:
         find . -type d -name "*test*" || echo "No test directories found"
         find . -name "test_*.py" -type f || echo "No test files found"
         
-        echo "Checking if generated_tests exists:"
-        if [ -d "generated_tests" ]; then
-          echo "✅ generated_tests directory exists"
-          ls -la generated_tests/
+        echo "Checking if final_automation/generated_tests exists:"
+        if [ -d "final_automation/generated_tests" ]; then
+          echo "✅ final_automation/generated_tests directory exists"
+          ls -la final_automation/generated_tests/
         else
-          echo "❌ generated_tests directory not found"
+          echo "❌ final_automation/generated_tests directory not found"
           echo "Available directories:"
-          ls -la | grep "^d"
+          find . -type d -name "*automation*" -o -name "*test*" | head -10
         fi
         
         echo "Pytest version and plugins:"
         pytest --version
         
-        # Try to collect tests from any available test directory
+        # Try to collect tests from final_automation/generated_tests
         echo "Pytest collection attempt:"
-        if [ -d "generated_tests" ]; then
-          pytest --collect-only generated_tests/ || echo "Pytest collection from generated_tests failed"
+        if [ -d "final_automation/generated_tests" ]; then
+          pytest --collect-only final_automation/generated_tests/ || echo "Pytest collection from final_automation/generated_tests failed"
         else
-          echo "Trying to collect from current directory:"
-          pytest --collect-only . || echo "Pytest collection from current directory failed"
+          echo "final_automation/generated_tests not found, cannot collect tests"
         fi
     
     - name: Run test suite (parallel execution)
@@ -121,17 +120,17 @@ jobs:
         # Show Chrome path being used
         echo "Using Chrome at: $PLAYWRIGHT_CHROME_EXECUTABLE"
         
-        # Find and run tests from available locations
-        if [ -d "generated_tests" ] && [ -n "$(find generated_tests -name 'test_*.py' -type f)" ]; then
-          echo "Running tests from generated_tests directory"
-          pytest generated_tests/ -v --html=reports/test_report.html --self-contained-html -n auto --dist worksteal --junit-xml=reports/junit.xml
-        elif [ -n "$(find . -maxdepth 1 -name 'test_*.py' -type f)" ]; then
-          echo "Running tests from current directory"
-          pytest test_*.py -v --html=reports/test_report.html --self-contained-html -n auto --dist worksteal --junit-xml=reports/junit.xml
+        # Run tests from final_automation/generated_tests directory
+        if [ -d "final_automation/generated_tests" ] && [ -n "$(find final_automation/generated_tests -name 'test_*.py' -type f)" ]; then
+          echo "✅ Running tests from final_automation/generated_tests directory"
+          ls -la final_automation/generated_tests/
+          pytest final_automation/generated_tests/ -v --html=reports/test_report.html --self-contained-html -n auto --dist worksteal --junit-xml=reports/junit.xml
         else
-          echo "❌ No test files found in any location"
-          echo "Available Python files:"
-          find . -name "*.py" -type f | head -10
+          echo "❌ final_automation/generated_tests directory not found or no test files"
+          echo "Available directories:"
+          find . -type d -name "*test*" | head -10
+          echo "Available test files:"
+          find . -name "test_*.py" -type f | head -10
           exit 1
         fi
       env:

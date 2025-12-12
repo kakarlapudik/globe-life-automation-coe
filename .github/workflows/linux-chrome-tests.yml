@@ -275,41 +275,40 @@ except Exception as e:
         # Debug test discovery first
         echo "🔍 Debugging test discovery..."
         echo "Current directory: $(pwd)"
-        ls -la generated_tests/ || echo "generated_tests directory not found"
-        find . -name "test_*.py" -type f || echo "No test files found"
+        ls -la final_automation/generated_tests/ || echo "final_automation/generated_tests directory not found"
+        find final_automation/generated_tests -name "test_*.py" -type f 2>/dev/null || echo "No test files found in final_automation/generated_tests"
         
         # Run tests based on selected suite
         case "${{ github.event.inputs.test_suite || 'homepage-links' }}" in
           "homepage-links")
             echo "Running homepage link validation tests..."
-            echo "Looking for homepage test file..."
+            echo "Running homepage link validation tests from final_automation..."
             
-            # Find the homepage test file
-            if [ -f "generated_tests/test_homepage_links.py" ]; then
-              TEST_FILE="generated_tests/test_homepage_links.py"
-            elif [ -f "test_homepage_links.py" ]; then
-              TEST_FILE="test_homepage_links.py"
+            # Check if we have test files in final_automation/generated_tests
+            if [ -d "final_automation/generated_tests" ] && [ -n "$(find final_automation/generated_tests -name 'test_*.py' -type f)" ]; then
+              echo "✅ Found test files in final_automation/generated_tests"
+              ls -la final_automation/generated_tests/
+              
+              # Run the first test file (or all if no specific homepage test)
+              pytest final_automation/generated_tests/ -v -s \
+                --html=reports/linux_chrome_homepage.html \
+                --self-contained-html \
+                --junit-xml=reports/linux_chrome_homepage_junit.xml \
+                -n $WORKERS --dist worksteal
             else
-              echo "❌ test_homepage_links.py not found in any location"
-              echo "Available test files:"
-              find . -name "test_*.py" -type f
+              echo "❌ No test files found in final_automation/generated_tests"
+              echo "Available directories:"
+              find . -type d -name "*test*" | head -5
               exit 1
             fi
-            
-            echo "Running test: $TEST_FILE"
-            pytest $TEST_FILE -v -s \
-              --html=reports/linux_chrome_homepage.html \
-              --self-contained-html \
-              --junit-xml=reports/linux_chrome_homepage_junit.xml \
-              -n $WORKERS --dist worksteal
             ;;
           "full-automation-suite")
             echo "Running full automation suite..."
             python run_complete_automation.py
             ;;
           "all-tests")
-            echo "Running all available tests..."
-            pytest generated_tests/ final_automation/generated_tests/ -v -s \
+            echo "Running all available tests from final_automation..."
+            pytest final_automation/generated_tests/ -v -s \
               --html=reports/linux_chrome_all_tests.html \
               --self-contained-html \
               --junit-xml=reports/linux_chrome_all_junit.xml \
@@ -317,8 +316,8 @@ except Exception as e:
               --maxfail=5
             ;;
           "generated-tests-only")
-            echo "Running generated tests only..."
-            pytest generated_tests/ -v -s \
+            echo "Running generated tests from final_automation only..."
+            pytest final_automation/generated_tests/ -v -s \
               --html=reports/linux_chrome_generated.html \
               --self-contained-html \
               --junit-xml=reports/linux_chrome_generated_junit.xml \
