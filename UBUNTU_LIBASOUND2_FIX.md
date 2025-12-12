@@ -1,7 +1,7 @@
-# Ubuntu libasound2 Package Fix
+# GitHub Actions Ubuntu libasound2 Package Fix
 
 ## Problem
-When running Playwright browser automation on Ubuntu (especially in GitHub Actions), you may encounter this error:
+When running Playwright browser automation in GitHub Actions on Ubuntu runners, you may encounter this error:
 
 ```
 Package libasound2 is a virtual package provided by:libasound2t64 1.2.11-1ubuntu0.1 (= 1.2.11-1ubuntu0.1)
@@ -49,21 +49,23 @@ playwright install-deps chromium || echo "⚠️ Some deps failed but continuing
 - `.github/workflows/test-linux-chrome-simple.yml`
 - `.github/workflows/test-suite.yml`
 
+## For Local Development (Windows/Mac)
+If you're developing on Windows or Mac, you don't need to worry about this issue - it only affects Linux environments. Your local Playwright installation should work fine.
+
 ## Testing
 After applying this fix, your GitHub Actions workflows should:
 1. ✅ Install system dependencies successfully
-2. ✅ Install Playwright browsers without audio package errors
+2. ✅ Install Playwright browsers without audio package errors  
 3. ✅ Run headless browser tests normally
 
+## Next Steps
+1. Commit and push your changes to trigger the GitHub Actions
+2. Monitor the workflow runs to confirm the dependency installation succeeds
+3. Your tests should now run without the `libasound2` package errors
+
 ## Alternative Solutions
-If you still encounter issues, you can also:
+If you still encounter issues in GitHub Actions:
 
 1. **Use Docker**: Run tests in a container with pre-installed dependencies
-2. **Skip audio deps**: Use `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` and install manually
-3. **Use different runner**: Switch to a different Ubuntu version if needed
-
-## Verification
-To verify the fix works, check that:
-- `libasound2t64` is installed: `dpkg -l | grep libasound`
-- Playwright can launch browsers: `playwright --version`
-- Tests run without dependency errors
+2. **Different Ubuntu version**: Use `runs-on: ubuntu-20.04` instead of `ubuntu-latest`
+3. **Skip problematic deps**: Add `|| true` to continue on dependency failures
