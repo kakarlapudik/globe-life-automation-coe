@@ -76,9 +76,19 @@ python run_complete_automation.py
 
 ## 🔧 Technical Implementation
 
-### **Chrome Detection Logic:**
+### **Linux Workflow - Playwright Installation:**
+```yaml
+# Automatic Playwright Chromium installation on Linux
+- name: Install dependencies
+  run: |
+    pip install -r requirements.txt
+    playwright install chromium          # Downloads Chromium browser
+    playwright install-deps chromium     # Installs system dependencies
+```
+
+### **Local/Windows - Chrome Detection Logic:**
 ```python
-# System binaries checked first
+# For local development and Windows systems
 system_binaries = [
     "/usr/bin/google-chrome",
     "/usr/bin/chromium-browser", 
@@ -94,18 +104,14 @@ for binary in ["google-chrome", "chromium-browser", "chromium"]:
         break
 ```
 
-### **Workflow Chrome Setup:**
+### **Workflow Playwright Setup:**
 ```yaml
-# Automatic Chrome detection and installation
-if command -v google-chrome > /dev/null; then
-  echo "✅ Found Google Chrome"
-elif command -v chromium-browser > /dev/null; then
-  echo "✅ Found Chromium Browser"
-else
-  echo "📦 Installing Chromium browser..."
-  sudo apt-get update
-  sudo apt-get install -y chromium-browser
-fi
+# Install Playwright browsers and system dependencies
+- name: Install dependencies
+  run: |
+    pip install -r requirements.txt
+    playwright install chromium
+    playwright install-deps chromium
 ```
 
 ## 📋 Files Modified/Created

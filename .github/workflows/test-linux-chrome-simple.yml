@@ -22,36 +22,16 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-        echo "🎭 Setting up Chrome for Playwright..."
-        
-        # Check for existing Chrome/Chromium installations
-        CHROME_FOUND=false
-        
-        if command -v google-chrome > /dev/null; then
-          echo "✅ Found Google Chrome: $(google-chrome --version)"
-          CHROME_FOUND=true
-        elif command -v chromium-browser > /dev/null; then
-          echo "✅ Found Chromium Browser: $(chromium-browser --version)"
-          CHROME_FOUND=true
-        elif command -v chromium > /dev/null; then
-          echo "✅ Found Chromium: $(chromium --version)"
-          CHROME_FOUND=true
-        fi
-        
-        # Install Chromium if none found
-        if [ "$CHROME_FOUND" = false ]; then
-          echo "📦 Installing Chromium browser..."
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser
-          echo "✅ Chromium installed: $(chromium-browser --version)"
-        fi
+        echo "🎭 Installing Playwright browsers and dependencies..."
+        playwright install chromium
+        playwright install-deps chromium
     
-    - name: Verify Chrome installation
+    - name: Verify Playwright setup
       run: |
-        echo "🔍 Verifying Chrome installation..."
+        echo "🔍 Verifying Playwright and Chromium setup..."
         playwright --version
         
-        # Test Chrome can start
+        # Test Chromium can start
         python -c "
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
@@ -59,13 +39,13 @@ with sync_playwright() as p:
     page = browser.new_page()
     page.goto('https://www.google.com')
     title = page.title()
-    print(f'✅ Chrome works! Page title: {title}')
+    print(f'✅ Chromium works! Page title: {title}')
     browser.close()
 "
     
     - name: Run simple homepage test
       run: |
-        echo "🚀 Running simple homepage link test..."
+        echo "🚀 Running simple homepage link test with Playwright Chromium..."
         
         # Ensure we're NOT using Selenium Grid
         unset USE_SELENIUM_GRID

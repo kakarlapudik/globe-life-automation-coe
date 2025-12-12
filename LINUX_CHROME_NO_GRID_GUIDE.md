@@ -50,8 +50,9 @@ python run_complete_automation.py
 # Disable Selenium Grid
 USE_SELENIUM_GRID=false
 
-# Use local Playwright Chrome
-playwright install chromium --with-deps
+# Install Playwright Chromium (Linux workflows do this automatically)
+playwright install chromium
+playwright install-deps chromium
 ```
 
 ### **Test Execution:**
