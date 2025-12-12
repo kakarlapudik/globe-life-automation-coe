@@ -34,20 +34,23 @@ def browser_type_launch_args(browser_type_launch_args):
                 chromium_path = chrome_path
                 break
     else:
-        # Linux - check system binaries first, then Playwright
-        system_binaries = [
-            "/usr/bin/google-chrome",
-            "/usr/bin/chromium-browser", 
-            "/usr/bin/chromium",
-            "/snap/bin/chromium",
-        ]
+        # Linux - check environment variable first (for GitHub Actions), then system binaries
+        chromium_path = os.environ.get("PLAYWRIGHT_CHROME_EXECUTABLE")
         
-        # Check system binaries using shutil.which
-        for binary in ["google-chrome", "chromium-browser", "chromium"]:
-            path = shutil.which(binary)
-            if path:
-                chromium_path = path
-                break
+        if not chromium_path:
+            system_binaries = [
+                "/usr/bin/google-chrome",
+                "/usr/bin/chromium-browser", 
+                "/usr/bin/chromium",
+                "/snap/bin/chromium",
+            ]
+            
+            # Check system binaries using shutil.which
+            for binary in ["google-chrome", "chromium-browser", "chromium"]:
+                path = shutil.which(binary)
+                if path:
+                    chromium_path = path
+                    break
         
         # If no system binary found, check Playwright cache
         if not chromium_path:
@@ -69,7 +72,11 @@ def browser_type_launch_args(browser_type_launch_args):
     # Only set executable_path if we found a specific path
     if chromium_path:
         launch_args["executable_path"] = chromium_path
-        print(f"Using Chromium at: {chromium_path}")
+        print(f"Using Chrome/Chromium at: {chromium_path}")
+        
+        # Log if using GitHub Actions Chrome (Linux runners only)
+        if chromium_path == os.environ.get("PLAYWRIGHT_CHROME_EXECUTABLE"):
+            print("✅ Using Google Chrome from GitHub Actions Linux runner")
     else:
         print("Using default Playwright Chromium")
     

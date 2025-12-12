@@ -44,10 +44,26 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Install Playwright browsers
+    - name: Install Google Chrome
       run: |
-        playwright install chromium
-        playwright install-deps chromium || echo "⚠️ Some deps failed but continuing..."
+        echo "🌐 Installing Google Chrome..."
+        
+        # Download and install Google Chrome
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        
+        # Verify Chrome installation
+        google-chrome --version
+        CHROME_PATH=$(which google-chrome)
+        echo "Chrome installed at: $CHROME_PATH"
+        echo "PLAYWRIGHT_CHROME_EXECUTABLE=$CHROME_PATH" >> $GITHUB_ENV
+    
+    - name: Setup Playwright for Chrome
+      run: |
+        echo "🎭 Setting up Playwright for system Chrome..."
+        playwright install-deps chrome || echo "⚠️ Some deps failed but continuing..."
     
     - name: Run verification setup
       run: python verify_setup.py
