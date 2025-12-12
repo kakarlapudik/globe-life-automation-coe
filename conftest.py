@@ -69,6 +69,12 @@ def browser_type_launch_args(browser_type_launch_args):
         "headless": headless_mode,
     }
     
+    # Add slow motion for debugging (only in non-headless mode)
+    if not headless_mode:
+        slow_mo = int(os.environ.get("PLAYWRIGHT_SLOW_MO", "0"))
+        if slow_mo > 0:
+            launch_args["slow_mo"] = slow_mo
+    
     # Only set executable_path if we found a specific path
     if chromium_path:
         launch_args["executable_path"] = chromium_path
