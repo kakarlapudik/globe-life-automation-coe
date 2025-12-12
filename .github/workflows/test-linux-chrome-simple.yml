@@ -119,6 +119,16 @@ with sync_playwright() as p:
         # Create reports directory
         mkdir -p reports
         
+        # Debug test discovery
+        echo "🔍 Debugging test discovery..."
+        echo "Current directory: $(pwd)"
+        ls -la generated_tests/ || echo "generated_tests directory not found"
+        echo "Looking for test_homepage_links.py:"
+        ls -la generated_tests/test_homepage_links.py || echo "test_homepage_links.py not found"
+        
+        # Show all test files
+        find . -name "test_*.py" -type f || echo "No test files found"
+        
         # Run a simple test
         pytest generated_tests/test_homepage_links.py -v -s \
           --html=reports/simple_chrome_test.html \
