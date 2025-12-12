@@ -89,16 +89,49 @@ jobs:
           libxss-dev \
           libasound2-dev
     
-    - name: Install Playwright and Chrome
+    - name: Setup Chrome and Playwright
       run: |
-        echo "🎭 Installing Playwright with Chrome browser"
-        playwright install chromium --with-deps
+        echo "🎭 Setting up Chrome and Playwright"
         
-        # Verify installation
-        playwright --version
+        # Check for existing Chrome/Chromium installations
+        CHROME_FOUND=false
         
-        # Test Chrome availability
-        chromium --version || google-chrome --version || echo "Chrome installed via Playwright"
+        if command -v google-chrome > /dev/null; then
+          echo "✅ Found Google Chrome: $(google-chrome --version)"
+          CHROME_FOUND=true
+        elif command -v chromium-browser > /dev/null; then
+          echo "✅ Found Chromium Browser: $(chromium-browser --version)"
+          CHROME_FOUND=true
+        elif command -v chromium > /dev/null; then
+          echo "✅ Found Chromium: $(chromium --version)"
+          CHROME_FOUND=true
+        fi
+        
+        # Install Chromium if none found
+        if [ "$CHROME_FOUND" = false ]; then
+          echo "📦 Installing Chromium browser..."
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+          echo "✅ Chromium installed: $(chromium-browser --version)"
+        fi
+        
+        # Verify Playwright installation
+        echo "🎭 Playwright version: $(playwright --version)"
+        
+        # Test Chrome can be launched by Playwright
+        echo "🧪 Testing Chrome launch with Playwright..."
+        python -c "
+from playwright.sync_api import sync_playwright
+import sys
+try:
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        print('✅ Chrome launched successfully via Playwright')
+        browser.close()
+except Exception as e:
+    print(f'❌ Chrome launch failed: {e}')
+    sys.exit(1)
+"
     
     - name: Configure test environment
       run: |
