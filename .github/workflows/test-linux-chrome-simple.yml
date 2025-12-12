@@ -35,40 +35,71 @@ jobs:
           libxshmfence1 \
           libgbm1
     
-    - name: Install dependencies and setup Chrome
+    - name: Install Python dependencies
       run: |
         echo "📦 Installing Python dependencies..."
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+    
+    - name: Install Google Chrome
+      run: |
+        echo "🌐 Installing Google Chrome..."
         
-        echo "🎭 Installing Playwright browsers and dependencies..."
-        playwright install chromium
-        playwright install-deps chromium || echo "⚠️ Some deps failed but continuing..."
+        # Download and install Google Chrome
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        
+        # Verify Chrome installation
+        google-chrome --version
+        CHROME_PATH=$(which google-chrome)
+        echo "Chrome installed at: $CHROME_PATH"
+        echo "CHROME_EXECUTABLE_PATH=$CHROME_PATH" >> $GITHUB_ENV
+    
+    - name: Setup Playwright for Chrome
+      run: |
+        echo "🎭 Setting up Playwright for system Chrome..."
+        
+        # Install Playwright dependencies for Chrome
+        playwright install-deps chrome || echo "⚠️ Some deps failed but continuing..."
     
     - name: Verify Playwright setup
       run: |
-        echo "🔍 Verifying Playwright and Chromium setup..."
+        echo "🔍 Verifying Playwright and Chrome setup..."
         playwright --version
         
-        # Test Chromium can start
+        # Test Chrome can start with Playwright
         python -c "
+import os
 from playwright.sync_api import sync_playwright
+
+chrome_path = os.environ.get('CHROME_EXECUTABLE_PATH', '/usr/bin/google-chrome')
+print(f'Using Chrome at: {chrome_path}')
+
 with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
+    browser = p.chromium.launch(
+        executable_path=chrome_path,
+        headless=True
+    )
     page = browser.new_page()
     page.goto('https://www.google.com')
     title = page.title()
-    print(f'✅ Chromium works! Page title: {title}')
+    print(f'✅ Chrome works! Page title: {title}')
     browser.close()
 "
     
     - name: Run simple homepage test
       run: |
-        echo "🚀 Running simple homepage link test with Playwright Chromium..."
+        echo "🚀 Running simple homepage link test with Google Chrome..."
         
         # Ensure we're NOT using Selenium Grid
         unset USE_SELENIUM_GRID
         export PLAYWRIGHT_HEADLESS=true
+        
+        # Set Chrome executable path for tests
+        export PLAYWRIGHT_CHROME_EXECUTABLE=$(which google-chrome)
+        echo "Using Chrome at: $PLAYWRIGHT_CHROME_EXECUTABLE"
         
         # Create reports directory
         mkdir -p reports

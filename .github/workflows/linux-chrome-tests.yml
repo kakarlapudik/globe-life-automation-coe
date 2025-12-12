@@ -130,13 +130,54 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Install Playwright browsers
+    - name: Install Google Chrome
       run: |
-        echo "🎭 Installing Playwright browsers and dependencies..."
-        playwright install chromium
+        echo "�  Installing Google Chrome..."
         
-        # Install remaining deps (should work now with libasound2 fixed)
-        playwright install-deps chromium || echo "⚠️ Some deps failed but continuing..."
+        # Download and install Google Chrome
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        
+        # Verify Chrome installation
+        google-chrome --version
+        CHROME_PATH=$(which google-chrome)
+        echo "Chrome installed at: $CHROME_PATH"
+        echo "CHROME_EXECUTABLE_PATH=$CHROME_PATH" >> $GITHUB_ENV
+    
+    - name: Install Playwright (without browsers)
+      run: |
+        echo "🎭 Installing Playwright dependencies only..."
+        
+        # Install Playwright Python package (already done via requirements.txt)
+        # Just install system dependencies for Chrome
+        playwright install-deps chrome || echo "⚠️ Some deps failed but continuing..."
+        
+        # Verify Playwright can find Chrome
+        echo "Testing Playwright with system Chrome..."
+        python -c "
+import os
+from playwright.sync_api import sync_playwright
+
+chrome_path = os.environ.get('CHROME_EXECUTABLE_PATH', '/usr/bin/google-chrome')
+print(f'Using Chrome at: {chrome_path}')
+
+try:
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            executable_path=chrome_path,
+            headless=True
+        )
+        page = browser.new_page()
+        page.goto('https://www.google.com')
+        title = page.title()
+        print(f'✅ Chrome works! Page title: {title}')
+        browser.close()
+except Exception as e:
+    print(f'❌ Chrome test failed: {e}')
+    exit(1)
+"
     
     - name: Verify Playwright setup
       run: |
@@ -166,6 +207,11 @@ except Exception as e:
         
         # Ensure Selenium Grid is disabled
         echo "USE_SELENIUM_GRID=false" >> $GITHUB_ENV
+        
+        # Set Chrome executable path for Playwright
+        CHROME_PATH=$(which google-chrome)
+        echo "PLAYWRIGHT_CHROME_EXECUTABLE=$CHROME_PATH" >> $GITHUB_ENV
+        echo "Using Chrome at: $CHROME_PATH"
         
         # Set headless mode based on input
         if [ "${{ github.event.inputs.headless_mode || 'true' }}" == "true" ]; then

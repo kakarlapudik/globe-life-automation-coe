@@ -1,4 +1,4 @@
-# GitHub Actions Ubuntu libasound2 Package Fix
+# GitHub Actions Linux Runner Chrome Setup
 
 ## Problem
 When running Playwright browser automation in GitHub Actions on Ubuntu runners, you may encounter this error:
@@ -13,7 +13,7 @@ E: Package 'libasound2' has no installation candidate
 - Playwright's `install-deps` command still tries to install the old `libasound2` package
 - This causes the installation to fail when setting up browser dependencies
 
-## Solution Applied
+## Solution Applied (Linux GitHub Actions Only)
 
 ### 1. Install Correct Audio Package
 Instead of letting Playwright install the virtual package, we explicitly install the actual package:
@@ -22,7 +22,24 @@ Instead of letting Playwright install the virtual package, we explicitly install
 sudo apt-get install -y libasound2t64 libasound2-dev
 ```
 
-### 2. Install Essential Browser Dependencies
+### 2. Install Google Chrome (Linux Runners)
+We now install Google Chrome directly instead of using Playwright's Chromium:
+
+```bash
+wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+sudo apt-get update
+sudo apt-get install -y google-chrome-stable
+```
+
+### 3. Configure Playwright to Use System Chrome
+Set the Chrome executable path for Playwright:
+
+```bash
+export PLAYWRIGHT_CHROME_EXECUTABLE=$(which google-chrome)
+```
+
+### 4. Install Essential Browser Dependencies
 We also install other common dependencies that browsers need:
 
 ```bash
@@ -37,20 +54,23 @@ sudo apt-get install -y \
   libgbm1
 ```
 
-### 3. Graceful Fallback
-We allow `playwright install-deps` to continue even if some packages fail:
-
-```bash
-playwright install-deps chromium || echo "⚠️ Some deps failed but continuing..."
-```
-
 ## Files Updated
 - `.github/workflows/linux-chrome-tests.yml`
 - `.github/workflows/test-linux-chrome-simple.yml`
 - `.github/workflows/test-suite.yml`
 
-## For Local Development (Windows/Mac)
-If you're developing on Windows or Mac, you don't need to worry about this issue - it only affects Linux environments. Your local Playwright installation should work fine.
+## Important: Linux GitHub Actions Runners Only
+
+**This configuration is specifically for GitHub Actions Linux runners (`ubuntu-latest`)**
+
+### For Local Development
+- **Windows**: Uses system Chrome if available, otherwise Playwright's Chromium
+- **Mac**: Uses system Chrome if available, otherwise Playwright's Chromium  
+- **Linux (local)**: Will use system Chrome/Chromium if available
+
+### For GitHub Actions
+- **Linux runners**: Now installs and uses Google Chrome directly
+- **Windows/Mac runners**: Would use default Playwright setup (not covered here)
 
 ## Testing
 After applying this fix, your GitHub Actions workflows should:
