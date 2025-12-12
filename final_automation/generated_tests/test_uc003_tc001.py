@@ -33,7 +33,7 @@ class TestUC003_TC001:
     def test_uc003_tc001_positive_flow(self):
         """
         Test: Navigation Menu Link Validation - Positive Flow
-        Expected: Comprehensive link validation with detailed reporting
+        Expected: Validate only navigation menu links including dropdowns and submenus
         """
         page = self.page
         
@@ -43,11 +43,69 @@ class TestUC003_TC001:
         # Wait for page to load completely
         page.wait_for_load_state("networkidle")
         
-        # Extract all links from the page
-        print(f"\n[EXTRACT] Extracting links from {self.base_url}")
-        links = page.locator("a[href]").all()
+        print(f"\n[NAVIGATION] Extracting navigation menu links from {self.base_url}")
         
-        for link in links:
+        # Define navigation-specific selectors
+        nav_selectors = [
+            "nav a[href]",  # Main navigation
+            ".navbar a[href]",  # Navbar links
+            ".navigation a[href]",  # Navigation class
+            ".menu a[href]",  # Menu links
+            "header nav a[href]",  # Header navigation
+            ".nav-menu a[href]",  # Nav menu class
+            "[role='navigation'] a[href]",  # ARIA navigation
+            ".main-nav a[href]",  # Main navigation class
+            ".primary-nav a[href]",  # Primary navigation
+            ".top-nav a[href]",  # Top navigation
+        ]
+        
+        navigation_links = []
+        
+        # Extract navigation links
+        for selector in nav_selectors:
+            try:
+                links = page.locator(selector).all()
+                if links:
+                    navigation_links.extend(links)
+                    print(f"[NAV] Found {len(links)} links in {selector}")
+            except:
+                continue
+        
+        # Handle dropdown menus by hovering over navigation items
+        try:
+            nav_items = page.locator("nav li, .navbar li, .menu li").all()
+            for item in nav_items:
+                try:
+                    # Hover to reveal dropdowns
+                    item.hover(timeout=2000)
+                    page.wait_for_timeout(500)  # Wait for dropdown animation
+                    
+                    # Look for dropdown links
+                    dropdown_links = item.locator("a[href]").all()
+                    navigation_links.extend(dropdown_links)
+                    
+                except:
+                    continue
+        except:
+            print("[INFO] No dropdown menus found or hover failed")
+        
+        # Remove duplicates
+        unique_nav_links = []
+        seen_hrefs = set()
+        
+        for link in navigation_links:
+            try:
+                href = link.get_attribute("href")
+                if href and href not in seen_hrefs:
+                    unique_nav_links.append(link)
+                    seen_hrefs.add(href)
+            except:
+                continue
+        
+        print(f"[NAVIGATION] Processing {len(unique_nav_links)} unique navigation links")
+        
+        # Validate each navigation link
+        for link in unique_nav_links:
             try:
                 href = link.get_attribute("href")
                 text = link.inner_text().strip()[:50]  # Limit text length
