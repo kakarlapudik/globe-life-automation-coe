@@ -137,7 +137,69 @@ jobs:
         # Disable SSL verification for corporate environments
         PYTHONHTTPSVERIFY: 0
     
-    - name: Upload test reports
+    - name: Generate enhanced final report
+      if: always()
+      run: |
+        echo "📊 Generating enhanced final report..."
+        
+        # Create comprehensive report directory
+        mkdir -p final_reports
+        
+        # Generate enhanced HTML report if script exists
+        if [ -f "generate_enhanced_html_report.py" ]; then
+          echo "Generating enhanced HTML report..."
+          python generate_enhanced_html_report.py || echo "Enhanced report generation failed"
+          
+          # Copy enhanced report to final_reports
+          if [ -f "reports/enhanced_complete_automation_report.html" ]; then
+            cp reports/enhanced_complete_automation_report.html final_reports/
+            echo "✅ Enhanced HTML report generated"
+          fi
+        fi
+        
+        # Copy all reports to final_reports directory
+        cp -r reports/* final_reports/ 2>/dev/null || echo "No reports to copy"
+        
+        # Generate summary report
+        echo "# Linux Runner Test Execution Summary" > final_reports/EXECUTION_SUMMARY.md
+        echo "**Date**: $(date)" >> final_reports/EXECUTION_SUMMARY.md
+        echo "**Runner**: GitHub Actions Ubuntu Latest" >> final_reports/EXECUTION_SUMMARY.md
+        echo "**Chrome**: $PLAYWRIGHT_CHROME_EXECUTABLE" >> final_reports/EXECUTION_SUMMARY.md
+        echo "" >> final_reports/EXECUTION_SUMMARY.md
+        
+        # Add test results summary
+        if [ -f "reports/junit.xml" ]; then
+          echo "## Test Results" >> final_reports/EXECUTION_SUMMARY.md
+          TOTAL_TESTS=$(grep -o 'tests="[0-9]*"' reports/junit.xml | grep -o '[0-9]*' || echo "0")
+          FAILURES=$(grep -o 'failures="[0-9]*"' reports/junit.xml | grep -o '[0-9]*' || echo "0")
+          ERRORS=$(grep -o 'errors="[0-9]*"' reports/junit.xml | grep -o '[0-9]*' || echo "0")
+          
+          echo "- **Total Tests**: $TOTAL_TESTS" >> final_reports/EXECUTION_SUMMARY.md
+          echo "- **Failures**: $FAILURES" >> final_reports/EXECUTION_SUMMARY.md
+          echo "- **Errors**: $ERRORS" >> final_reports/EXECUTION_SUMMARY.md
+        fi
+        
+        # List all generated files
+        echo "" >> final_reports/EXECUTION_SUMMARY.md
+        echo "## Generated Files" >> final_reports/EXECUTION_SUMMARY.md
+        ls -la final_reports/ >> final_reports/EXECUTION_SUMMARY.md
+        
+        echo "📋 Final report summary generated"
+    
+    - name: Upload comprehensive final reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: linux-runner-final-reports
+        path: |
+          final_reports/
+          reports/
+          screenshots/
+          test_videos/
+          logs/
+        retention-days: 30
+    
+    - name: Upload test reports (legacy)
       uses: actions/upload-artifact@v4
       if: always()
       with:

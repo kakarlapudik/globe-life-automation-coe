@@ -170,7 +170,43 @@ with sync_playwright() as p:
           done
         fi
     
-    - name: Upload results
+    - name: Generate simple test final report
+      if: always()
+      run: |
+        echo "📊 Generating final report for simple Chrome test..."
+        
+        # Create final report directory
+        mkdir -p simple_test_final_report
+        
+        # Copy all generated files
+        cp -r reports/* simple_test_final_report/ 2>/dev/null || echo "No reports"
+        cp -r screenshots/* simple_test_final_report/screenshots/ 2>/dev/null || echo "No screenshots"
+        
+        # Generate summary
+        echo "# Simple Linux Chrome Test Report" > simple_test_final_report/SIMPLE_TEST_SUMMARY.md
+        echo "**Date**: $(date)" >> simple_test_final_report/SIMPLE_TEST_SUMMARY.md
+        echo "**Chrome**: $PLAYWRIGHT_CHROME_EXECUTABLE" >> simple_test_final_report/SIMPLE_TEST_SUMMARY.md
+        echo "**Test Directory**: final_automation/generated_tests/" >> simple_test_final_report/SIMPLE_TEST_SUMMARY.md
+        echo "" >> simple_test_final_report/SIMPLE_TEST_SUMMARY.md
+        
+        # List generated files
+        echo "## Generated Files" >> simple_test_final_report/SIMPLE_TEST_SUMMARY.md
+        ls -la simple_test_final_report/ >> simple_test_final_report/SIMPLE_TEST_SUMMARY.md
+        
+        echo "✅ Simple test final report generated"
+    
+    - name: Upload comprehensive simple test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: simple-chrome-comprehensive-results
+        path: |
+          simple_test_final_report/
+          reports/
+          screenshots/
+        retention-days: 30
+    
+    - name: Upload results (legacy)
       uses: actions/upload-artifact@v4
       if: always()
       with:
