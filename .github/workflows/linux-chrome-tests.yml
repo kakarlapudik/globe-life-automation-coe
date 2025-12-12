@@ -76,29 +76,32 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-        # Install system dependencies for Chrome
-        sudo apt-get update
-        sudo apt-get install -y \
-          libnss3-dev \
-          libatk-bridge2.0-dev \
-          libdrm-dev \
-          libxcomposite-dev \
-          libxdamage-dev \
-          libxrandr-dev \
-          libgbm-dev \
-          libxss-dev \
-          libasound2-dev
+        # Install Playwright browsers and dependencies
+        echo "🎭 Installing Playwright browsers and system dependencies..."
+        playwright install chromium
+        playwright install-deps chromium
     
-    - name: Install Playwright and Chrome
+    - name: Verify Playwright setup
       run: |
-        echo "🎭 Installing Playwright with Chrome browser"
-        playwright install chromium --with-deps
+        echo "🎭 Verifying Playwright and Chromium setup"
         
-        # Verify installation
-        playwright --version
+        # Verify Playwright installation
+        echo "🎭 Playwright version: $(playwright --version)"
         
-        # Test Chrome availability
-        chromium --version || google-chrome --version || echo "Chrome installed via Playwright"
+        # Test Chromium can be launched by Playwright
+        echo "🧪 Testing Chromium launch with Playwright..."
+        python -c "
+from playwright.sync_api import sync_playwright
+import sys
+try:
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        print('✅ Chromium launched successfully via Playwright')
+        browser.close()
+except Exception as e:
+    print(f'❌ Chromium launch failed: {e}')
+    sys.exit(1)
+"
     
     - name: Configure test environment
       run: |
@@ -125,8 +128,8 @@ jobs:
     
     - name: Run Chrome Tests on Linux
       run: |
-        echo "🚀 Running tests with Chrome on Linux GitHub runner"
-        echo "Browser: Chrome (via Playwright)"
+        echo "🚀 Running tests with Chromium on Linux GitHub runner"
+        echo "Browser: Chromium (via Playwright)"
         echo "OS: $(lsb_release -d | cut -f2)"
         echo "Python: $(python --version)"
         echo "Test Suite: ${{ github.event.inputs.test_suite || 'homepage-links' }}"
@@ -182,7 +185,7 @@ jobs:
         # Generate summary for GitHub
         echo "## 🐧 Linux Chrome Test Results" >> $GITHUB_STEP_SUMMARY
         echo "- **Runner**: GitHub-hosted Ubuntu Latest" >> $GITHUB_STEP_SUMMARY
-        echo "- **Browser**: Chrome (Playwright)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Browser**: Chromium (Playwright)" >> $GITHUB_STEP_SUMMARY
         echo "- **Python**: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Test Suite**: ${{ github.event.inputs.test_suite || 'homepage-links' }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Headless Mode**: ${{ github.event.inputs.headless_mode || 'true' }}" >> $GITHUB_STEP_SUMMARY
@@ -263,7 +266,7 @@ jobs:
         echo "📊 Results: ${{ needs.linux-chrome-tests.result }}"
         
         if [ "${{ needs.linux-chrome-tests.result }}" == "success" ]; then
-          echo "✅ All tests passed successfully on Linux Chrome!"
+          echo "✅ All tests passed successfully on Linux Chromium!"
         else
           echo "⚠️ Some tests failed. Check the artifacts for details."
         fi

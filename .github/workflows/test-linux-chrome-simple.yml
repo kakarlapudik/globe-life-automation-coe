@@ -16,21 +16,22 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Install dependencies
+    - name: Install dependencies and setup Chrome
       run: |
         echo "📦 Installing Python dependencies..."
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-        echo "🎭 Installing Playwright with Chrome..."
-        playwright install chromium --with-deps
+        echo "🎭 Installing Playwright browsers and dependencies..."
+        playwright install chromium
+        playwright install-deps chromium
     
-    - name: Verify Chrome installation
+    - name: Verify Playwright setup
       run: |
-        echo "🔍 Verifying Chrome installation..."
+        echo "🔍 Verifying Playwright and Chromium setup..."
         playwright --version
         
-        # Test Chrome can start
+        # Test Chromium can start
         python -c "
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
@@ -38,13 +39,13 @@ with sync_playwright() as p:
     page = browser.new_page()
     page.goto('https://www.google.com')
     title = page.title()
-    print(f'✅ Chrome works! Page title: {title}')
+    print(f'✅ Chromium works! Page title: {title}')
     browser.close()
 "
     
     - name: Run simple homepage test
       run: |
-        echo "🚀 Running simple homepage link test..."
+        echo "🚀 Running simple homepage link test with Playwright Chromium..."
         
         # Ensure we're NOT using Selenium Grid
         unset USE_SELENIUM_GRID

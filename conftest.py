@@ -9,32 +9,82 @@ from typing import Generator
 
 @pytest.fixture(scope="session")
 def browser_type_launch_args(browser_type_launch_args):
-    """Configure browser launch to use Selenium Grid or local Chromium"""
+    """Configure browser launch to use existing Chromium installation"""
     import os
+    import platform
+    import glob
+    import shutil
     
-    # Check if Selenium Grid should be used
-    use_selenium_grid = os.environ.get("USE_SELENIUM_GRID", "false").lower() == "true"
-    selenium_hub_url = os.environ.get("SELENIUM_HUB_URL", "http://192.168.1.33:4444")
+    # Determine headless mode from environment
+    headless_mode = os.environ.get("PLAYWRIGHT_HEADLESS", "true").lower() == "true"
     
-    if use_selenium_grid:
-        # Configure for Selenium Grid
-        return {
-            **browser_type_launch_args,
-            "headless": False,
-            # Note: Playwright doesn't directly support Selenium Grid
-            # This would require additional configuration or using selenium-wire
-        }
-    else:
-        # Use existing Chromium from ms-playwright directory
-        chromium_path = os.path.expanduser(
-            r"~\AppData\Local\ms-playwright\chromium-1155\chrome-win\chrome.exe"
-        )
+    # Try to find existing Chromium installation
+    chromium_path = None
+    
+    if platform.system() == "Windows":
+        # Windows - use only system Chrome installations (no Playwright cache)
+        system_chrome_paths = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        ]
         
-        return {
-            **browser_type_launch_args,
-            "executable_path": chromium_path if os.path.exists(chromium_path) else None,
-            "headless": False
-        }
+        # Check system Chrome installations only
+        for chrome_path in system_chrome_paths:
+            if os.path.exists(chrome_path):
+                chromium_path = chrome_path
+                break
+    else:
+        # Linux - check system binaries first, then Playwright
+        system_binaries = [
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium-browser", 
+            "/usr/bin/chromium",
+            "/snap/bin/chromium",
+        ]
+        
+        # Check system binaries using shutil.which
+        for binary in ["google-chrome", "chromium-browser", "chromium"]:
+            path = shutil.which(binary)
+            if path:
+                chromium_path = path
+                break
+        
+        # If no system binary found, check Playwright cache
+        if not chromium_path:
+            playwright_patterns = [
+                os.path.expanduser("~/.cache/ms-playwright/chromium-*/chrome-linux/chrome"),
+            ]
+            for pattern in playwright_patterns:
+                matches = glob.glob(pattern)
+                if matches:
+                    chromium_path = matches[0]
+                    break
+    
+    # Configure launch args
+    launch_args = {
+        **browser_type_launch_args,
+        "headless": headless_mode,
+    }
+    
+    # Only set executable_path if we found a specific path
+    if chromium_path:
+        launch_args["executable_path"] = chromium_path
+        print(f"Using Chromium at: {chromium_path}")
+    else:
+        print("Using default Playwright Chromium")
+    
+    # Add Linux-specific args for stability
+    if platform.system() == "Linux":
+        launch_args["args"] = [
+            "--no-sandbox",
+            "--disable-dev-shm-usage", 
+            "--disable-gpu",
+            "--disable-web-security",
+            "--allow-running-insecure-content",
+            "--disable-features=VizDisplayCompositor",
+        ]
+    
+    return launch_args
 
 
 @pytest.fixture(scope="session")
@@ -104,6 +154,36 @@ def pytest_configure(config):
 def pytest_html_report_title(report):
     """Customize HTML report title"""
     report.title = "AI Test Automation Report"
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Generate enhanced HTML report after all tests complete"""
+    import subprocess
+    import os
+    
+    try:
+        # Only generate enhanced report if we have JSON reports
+        json_reports = [f for f in os.listdir("reports") if f.endswith("_links_report.json")]
+        
+        if json_reports:
+            print("\n[ENHANCED REPORT] Generating enhanced HTML report with test case details...")
+            result = subprocess.run(
+                ["python", "generate_enhanced_html_report.py"], 
+                capture_output=True, 
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                print("[ENHANCED REPORT] Enhanced HTML report generated successfully")
+                print("[ENHANCED REPORT] Location: reports/enhanced_complete_automation_report.html")
+            else:
+                print(f"[ENHANCED REPORT] Failed to generate enhanced report: {result.stderr}")
+        else:
+            print("[ENHANCED REPORT] No JSON reports found, skipping enhanced report generation")
+            
+    except Exception as e:
+        print(f"[ENHANCED REPORT] Error generating enhanced report: {e}")
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)

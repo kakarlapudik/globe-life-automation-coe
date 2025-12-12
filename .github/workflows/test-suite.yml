@@ -57,9 +57,8 @@ jobs:
         name: pytest-results
         path: reports/junit.xml
     
-    - name: Trigger Selenium Grid Tests
+    - name: Test Completion
       if: success()
       run: |
-        echo "✅ Local tests completed successfully"
-        echo "🚀 Selenium Grid tests will be triggered automatically via workflow_run event"
-        echo "🌐 Grid Hub: http://192.168.1.33:4444"
+        echo "✅ All tests completed successfully with Playwright"
+        echo "🎭 Using Chrome browser for reliable test execution"

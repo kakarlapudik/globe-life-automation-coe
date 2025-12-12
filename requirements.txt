@@ -5,7 +5,4 @@ pytest-playwright==0.4.3
 pytest-html==4.1.1
 pytest-xdist==3.5.0
 allure-pytest==2.13.2
-
-# Selenium Grid Support
-selenium==4.15.2
-webdriver-manager==4.0.1
+requests==2.32.5
