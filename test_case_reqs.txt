@@ -187,31 +187,45 @@ Preconditions:
 
 Steps:
 1. Navigate to https://investors.globelifeinsurance.com/
-2. Record initial static links count for comparison
-3. Trigger dynamic content loading through multiple interactions:
+2. Record initial static links count for comparison and baseline
+3. Trigger dynamic content loading through multiple interactions with detailed logging:
    - Scroll to bottom to trigger lazy loading
    - Click "Load More" or "Show More" buttons if present
    - Click pagination links if available
    - Hover over elements to reveal hidden content
    - Click tabs or accordion elements
    - Interact with expandable sections
-4. Compare link counts before and after each interaction
-5. Extract ONLY newly discovered links from dynamic interactions
+4. Compare link counts before and after each interaction with detailed tracking
+5. Extract ONLY newly discovered links from dynamic interactions with full details
 6. Include AJAX-specific selectors: [data-ajax], [data-load], .ajax-content, .dynamic-content
 7. Exclude static navigation, footer, and content links (tested separately)
-8. Validate each dynamically discovered link
-9. Generate report specific to dynamic content validation
+8. Validate each dynamically discovered link with response time measurement
+9. Generate detailed JSON report specific to dynamic content validation including:
+   - Initial static link count vs final dynamic link count
+   - Complete inventory of dynamically loaded links with trigger information
+   - Interaction methods used and their success/failure status
+   - Validation results for each dynamic link (URL, text, trigger method, status, response time)
+   - Dynamic content discovery statistics and success rate
+   - Test scope clearly identified as "dynamic and AJAX content only"
+   - Documentation of static link exclusion and interaction methods used
 
 Expected Results:
-- Dynamic content triggers are successfully executed
-- Newly loaded links are identified and separated from static links
-- AJAX and JavaScript-generated links are properly discovered
-- Pagination and "Load More" functionality works correctly
-- Dynamic links return appropriate status codes
-- Static links are excluded from this validation
-- HTML report includes only dynamically loaded links with trigger information
-- HTML report shows which interaction triggered each dynamic link discovery
-- Report indicates if no dynamic content was found (acceptable result)
+- Dynamic content triggers are successfully executed with detailed interaction logging
+- Newly loaded links are identified and separated from static links with clear attribution
+- AJAX and JavaScript-generated links are properly discovered and documented
+- Pagination and "Load More" functionality works correctly with interaction tracking
+- Dynamic links return appropriate status codes (200, 301, 302, 403 acceptable)
+- Static links are explicitly excluded from this validation with documentation
+- Detailed JSON report generated specifically for dynamic content including:
+  * Complete inventory of dynamically loaded links with trigger attribution
+  * Interaction methods attempted and their success/failure status
+  * Before/after link counts for each interaction
+  * Validation results for each dynamic link with full details
+  * Dynamic content discovery statistics and interaction success rates
+- Console output shows dynamic content discovery progress and interaction results
+- Test scope clearly documented as "dynamic and AJAX content only"
+- Report indicates if no dynamic content was found (acceptable result) with explanation
+- Documentation of all interaction methods attempted and their outcomes
 
 Priority: Medium
 
