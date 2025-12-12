@@ -51,23 +51,10 @@ if (-not $success) {
 }
 
 # Step 2: Run all generated tests with HTML reporting (parallel execution)
-Write-Banner "Step 2: Execute All Generated Tests in Parallel"
+Write-Banner "Step 2: Execute All Generated Tests in Parallel with Playwright"
 
-# Check if Selenium Grid should be used
-$useSeleniumGrid = $env:USE_SELENIUM_GRID -eq "true"
-$seleniumHubUrl = if ($env:SELENIUM_HUB_URL) { $env:SELENIUM_HUB_URL } else { "http://192.168.1.33:4444" }
-
-if ($useSeleniumGrid) {
-    Write-Host "🌐 Using Selenium Grid: $seleniumHubUrl" -ForegroundColor Cyan
-    $env:USE_SELENIUM_GRID = "true"
-    $env:SELENIUM_HUB_URL = $seleniumHubUrl
-    $env:SELENIUM_BROWSER = if ($env:SELENIUM_BROWSER) { $env:SELENIUM_BROWSER } else { "chrome" }
-    
-    $success = Run-Command -Command "pytest ./final_automation/generated_tests/ -v -s --html=reports/complete_automation_report.html --self-contained-html -n auto --dist worksteal --confcutdir=. -p conftest_selenium_grid" -Description "Running all AI-generated link validation tests in parallel on Selenium Grid"
-} else {
-    Write-Host "🖥️  Using local Playwright execution" -ForegroundColor Cyan
-    $success = Run-Command -Command "pytest ./final_automation/generated_tests/ -v -s --html=reports/complete_automation_report.html --self-contained-html -n auto --dist worksteal" -Description "Running all AI-generated link validation tests in parallel with Playwright"
-}
+Write-Host "🎭 Using local Playwright execution (Chrome browser)" -ForegroundColor Cyan
+$success = Run-Command -Command "pytest ./final_automation/generated_tests/ -v -s --html=reports/complete_automation_report.html --self-contained-html -n auto --dist worksteal" -Description "Running all AI-generated link validation tests in parallel with Playwright"
 
 # Step 3: Generate summary report
 Write-Banner "Step 3: Generate Summary Report"

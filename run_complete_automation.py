@@ -62,30 +62,13 @@ def main():
         sys.exit(1)
     
     # Step 2: Run all generated tests with HTML reporting (parallel execution)
-    print_banner("Step 2: Execute All Generated Tests in Parallel")
+    print_banner("Step 2: Execute All Generated Tests in Parallel with Playwright")
     
-    # Check if Selenium Grid should be used
-    use_selenium_grid = os.environ.get("USE_SELENIUM_GRID", "false").lower() == "true"
-    selenium_hub_url = os.environ.get("SELENIUM_HUB_URL", "http://192.168.1.33:4444")
-    
-    if use_selenium_grid:
-        print(f"[INFO] Using Selenium Grid: {selenium_hub_url}")
-        # Set environment variables for Selenium Grid
-        os.environ["USE_SELENIUM_GRID"] = "true"
-        os.environ["SELENIUM_HUB_URL"] = selenium_hub_url
-        os.environ["SELENIUM_BROWSER"] = os.environ.get("SELENIUM_BROWSER", "chrome")
-        
-        # Use Selenium Grid conftest
-        success = run_command(
-            "pytest ./final_automation/generated_tests/ -v -s --html=reports/complete_automation_report.html --self-contained-html -n auto --dist worksteal --confcutdir=. -p conftest_selenium_grid",
-            "Running all AI-generated link validation tests in parallel on Selenium Grid"
-        )
-    else:
-        print("[INFO] Using local Playwright execution")
-        success = run_command(
-            "pytest ./final_automation/generated_tests/ -v -s --html=reports/complete_automation_report.html --self-contained-html -n auto --dist worksteal",
-            "Running all AI-generated link validation tests in parallel with Playwright"
-        )
+    print("[INFO] Using local Playwright execution (Chrome browser)")
+    success = run_command(
+        "pytest ./final_automation/generated_tests/ -v -s --html=reports/complete_automation_report.html --self-contained-html -n auto --dist worksteal",
+        "Running all AI-generated link validation tests in parallel with Playwright"
+    )
     
     # Step 3: Generate summary report
     print_banner("Step 3: Generate Summary Report")
