@@ -156,6 +156,36 @@ def pytest_html_report_title(report):
     report.title = "AI Test Automation Report"
 
 
+def pytest_sessionfinish(session, exitstatus):
+    """Generate enhanced HTML report after all tests complete"""
+    import subprocess
+    import os
+    
+    try:
+        # Only generate enhanced report if we have JSON reports
+        json_reports = [f for f in os.listdir("reports") if f.endswith("_links_report.json")]
+        
+        if json_reports:
+            print("\n[ENHANCED REPORT] Generating enhanced HTML report with test case details...")
+            result = subprocess.run(
+                ["python", "generate_enhanced_html_report.py"], 
+                capture_output=True, 
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                print("[ENHANCED REPORT] ✅ Enhanced HTML report generated successfully")
+                print("[ENHANCED REPORT] 📄 Location: reports/enhanced_complete_automation_report.html")
+            else:
+                print(f"[ENHANCED REPORT] ❌ Failed to generate enhanced report: {result.stderr}")
+        else:
+            print("[ENHANCED REPORT] ⚠️ No JSON reports found, skipping enhanced report generation")
+            
+    except Exception as e:
+        print(f"[ENHANCED REPORT] ❌ Error generating enhanced report: {e}")
+
+
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """Capture screenshots on test failure"""
