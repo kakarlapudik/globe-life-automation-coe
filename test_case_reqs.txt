@@ -14,20 +14,31 @@ Steps:
 4. Exclude navigation menu links and footer links (tested separately)
 5. If no specific homepage links found, use main content area links only
 6. Limit to first 10 links to focus on homepage content
-7. For each homepage link, extract href attribute and validate URL
+7. For each homepage link, extract href attribute, link text, and validate URL
 8. Send HTTP HEAD request to verify status code using requests library
-9. Log each link validation result with URL and status code
-10. Save detailed JSON report with homepage-specific link validation results
+9. Log each link validation result with URL, status code, response time, and link text
+10. Save detailed JSON report with homepage-specific link validation results including:
+    - Test case ID and description
+    - List of all homepage links found with full details
+    - Validation results for each link (URL, text, status, response time)
+    - Summary statistics (total links, valid count, broken count, success rate)
+    - Selectors used for link extraction
+    - Test execution timestamp
 11. Assert that no broken homepage content links are found
 
 Expected Results:
 - Homepage loads successfully
 - Only homepage content links are extracted (not navigation/footer)
-- All homepage content links return HTTP status code 200
+- All homepage content links return HTTP status code 200 or acceptable redirects (301, 302)
 - No broken homepage links are found
-- Validation report focuses on homepage content only
-- HTML report includes list of homepage-specific validated links with status codes
-- HTML report shows homepage link validation summary with pass/fail counts
+- Detailed JSON report generated with complete link inventory including:
+  * Each homepage link URL, text, original href, status code, response time
+  * Test scope clearly identified as "homepage content only"
+  * Selectors used for link extraction documented
+  * Summary statistics with success rate percentage
+- Validation report focuses exclusively on homepage content links
+- Report excludes navigation menu and footer links (tested in other use cases)
+- Console output shows detailed validation progress for each homepage link
 
 Priority: High
 
@@ -46,24 +57,35 @@ Steps:
 2. Extract all links from the homepage
 3. Identify internal links (same domain) for crawling
 4. Visit up to 5 internal pages to limit test execution time
-5. For each visited page, extract all links (internal and external)
+5. For each visited page, extract all links (internal and external) with full details
 6. Track visited pages to avoid infinite loops
 7. Add new internal links to crawl queue
-8. For each link found across all pages, verify HTTP status code
+8. For each link found across all pages, verify HTTP status code and response time
 9. Validate both internal and external links from all crawled pages
-10. Generate comprehensive report with crawl results and link validation
-11. Include source page information for each validated link
+10. Generate comprehensive report with crawl results and detailed link validation including:
+    - Complete list of pages crawled with URLs
+    - All links found on each page with source page attribution
+    - Link categorization (internal vs external)
+    - Validation results for each link (URL, text, status, response time, source page)
+    - Crawl statistics (pages visited, total links found, internal/external breakdown)
+    - Test execution timestamp and performance metrics
+11. Include source page information for each validated link with full traceability
 
 Expected Results:
 - Multiple internal pages are discovered and visited (up to 5 pages)
-- All links from all crawled pages are validated
-- Both internal and external links return appropriate status codes
-- Crawl queue prevents infinite loops
-- Comprehensive report includes page hierarchy and crawl path
-- Broken links are identified with source page location
-- Report includes total pages crawled and links validated per page
-- HTML report contains detailed list of all validated links organized by source page
-- HTML report shows sitewide link validation results with status codes and crawl metrics
+- All links from all crawled pages are validated with complete details
+- Both internal and external links return appropriate status codes (200, 301, 302)
+- Crawl queue prevents infinite loops and tracks visited pages
+- Detailed JSON report generated with comprehensive crawl data including:
+  * Complete list of crawled pages with URLs
+  * All links found organized by source page
+  * Link categorization (internal vs external) with counts
+  * Validation results for each link with full details (URL, text, status, response time, source page)
+  * Crawl performance metrics and statistics
+- Broken links are identified with source page location and full context
+- Report includes total pages crawled and links validated per page with detailed breakdown
+- Console output shows crawling progress and validation results for each page
+- Test scope clearly identified as "multi-page site crawling" with page limits documented
 
 Priority: High
 
@@ -77,24 +99,36 @@ Preconditions:
 
 Steps:
 1. Navigate to https://investors.globelifeinsurance.com/
-2. Identify navigation-specific elements using selectors: nav a[href], .navbar a[href], .navigation a[href], .menu a[href], header nav a[href]
-3. Hover over navigation menu items to reveal dropdown menus
-4. Extract all navigation and dropdown menu links only
-5. Exclude footer links, content links, and social media links
-6. Remove duplicate navigation links
-7. For each navigation link, verify HTTP status code
-8. Focus validation on navigation structure only
-9. Generate report specific to navigation menu validation
+2. Identify navigation-specific elements using selectors: nav a[href], .navbar a[href], .navigation a[href], .menu a[href], header nav a[href], [role='navigation'] a[href]
+3. Hover over navigation menu items to reveal dropdown menus and submenus
+4. Extract all navigation and dropdown menu links with full details (URL, text, original href)
+5. Exclude footer links, content links, and social media links (tested separately)
+6. Remove duplicate navigation links while preserving link details
+7. For each navigation link, verify HTTP status code and measure response time
+8. Focus validation exclusively on navigation structure links
+9. Generate detailed JSON report specific to navigation menu validation including:
+   - Complete inventory of navigation links found
+   - Selectors used for navigation link extraction
+   - Dropdown menu discovery results
+   - Validation results for each navigation link (URL, text, status, response time)
+   - Navigation-specific statistics and success rate
+   - Test scope clearly identified as "navigation menu only"
+   - Exclusion of non-navigation links documented
 
 Expected Results:
-- Only navigation menu links are extracted and validated
-- All dropdown menus are discovered through hover interactions
-- All navigation links return appropriate status codes (200, 301, 302)
-- Duplicate navigation links are removed
-- Navigation-specific validation report is generated
-- HTML report lists only navigation menu links with validation status
-- HTML report includes dropdown menu structure and navigation-specific link validation results
-- Content area and footer links are excluded from this test
+- Only navigation menu links are extracted and validated (no content/footer links)
+- All dropdown menus are discovered through hover interactions with detailed logging
+- All navigation links return appropriate status codes (200, 301, 302, 403 acceptable)
+- Duplicate navigation links are removed while preserving unique link details
+- Detailed JSON report generated specifically for navigation validation including:
+  * Complete list of navigation links with full details
+  * Dropdown menu structure and discovery method
+  * Selectors used for navigation link extraction
+  * Validation results with status codes and response times
+  * Navigation-specific success rate and statistics
+- Console output shows navigation link discovery and validation progress
+- Test scope clearly documented as "navigation menu and header links only"
+- Content area, footer, and social media links are explicitly excluded and documented as out-of-scope
 
 Priority: High
 
@@ -108,26 +142,38 @@ Preconditions:
 
 Steps:
 1. Navigate to https://investors.globelifeinsurance.com/
-2. Scroll to footer section to ensure it's loaded
+2. Scroll to footer section to ensure it's loaded and visible
 3. Extract ONLY footer-specific links using selectors: footer a[href], .footer a[href], .social a[href], .utility a[href], .legal a[href]
 4. Include social media links: [href*='facebook'], [href*='twitter'], [href*='linkedin'], [href*='youtube'], [href*='instagram']
 5. Include utility links: [href*='privacy'], [href*='terms'], [href*='contact']
 6. Include email and phone links: [href='mailto:'], [href^='tel:']
-7. Exclude navigation menu links and main content links
-8. Categorize links by type: social media, utility, legal, contact
-9. Validate each footer/utility link for appropriate status codes
-10. Generate footer-specific validation report
+7. Exclude navigation menu links and main content links (tested separately)
+8. Categorize links by type: social media, utility, legal, contact with detailed classification
+9. Validate each footer/utility link for appropriate status codes and response times
+10. Generate detailed JSON report specific to footer and utility link validation including:
+    - Complete inventory of footer links organized by category
+    - Link categorization (social media, utility, legal, contact) with counts
+    - Selectors used for footer link extraction
+    - Validation results for each link (URL, text, category, status, response time)
+    - Footer-specific statistics and success rate by category
+    - Test scope clearly identified as "footer and utility links only"
+    - Exclusion of navigation and content links documented
 
 Expected Results:
-- Only footer, social media, and utility links are extracted
-- Social media links are properly categorized and validated
-- Utility pages (Privacy, Terms, Contact) load successfully
-- External social media links return appropriate status codes
-- Email and phone links are validated for proper format
-- Navigation and content links are excluded from this test
-- HTML report displays only footer/utility links with validation status
-- HTML report categorizes links by type (social media, utility, legal, contact)
-- Report focuses specifically on footer and utility link validation
+- Only footer, social media, and utility links are extracted (no navigation/content links)
+- Social media links are properly categorized and validated with platform identification
+- Utility pages (Privacy, Terms, Contact) load successfully with appropriate status codes
+- External social media links return appropriate status codes (200, 301, 302, 403 acceptable)
+- Email and phone links are validated for proper format and accessibility
+- Navigation and content links are explicitly excluded and documented as out-of-scope
+- Detailed JSON report generated specifically for footer validation including:
+  * Complete footer link inventory organized by category (social, utility, legal, contact)
+  * Link categorization with counts and category-specific success rates
+  * Validation results with full details for each footer link
+  * Footer-specific selectors used and discovery methods
+  * Category-wise statistics and overall footer link success rate
+- Console output shows footer link discovery and validation progress by category
+- Test scope clearly documented as "footer, social media, and utility links only"
 
 Priority: Medium
 
