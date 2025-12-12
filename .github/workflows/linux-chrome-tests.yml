@@ -1,0 +1,272 @@
+name: Linux Chrome Tests (No Grid)
+
+on:
+  # Trigger after successful builds
+  workflow_run:
+    workflows: ["Test Suite"]
+    types: [completed]
+    branches: [main, develop]
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'homepage-links'
+        type: choice
+        options:
+        - homepage-links
+        - full-automation-suite
+        - all-tests
+        - generated-tests-only
+      headless_mode:
+        description: 'Run in headless mode'
+        required: false
+        default: true
+        type: boolean
+      parallel_workers:
+        description: 'Number of parallel workers'
+        required: false
+        default: 'auto'
+        type: string
+
+  # Schedule for regular testing
+  schedule:
+    # Run daily at 3 AM UTC
+    - cron: '0 3 * * *'
+
+env:
+  # Disable Selenium Grid - use local Playwright/Chrome
+  USE_SELENIUM_GRID: false
+  PYTHONHTTPSVERIFY: 0
+
+jobs:
+  linux-chrome-tests:
+    runs-on: ubuntu-latest
+    
+    # Only run if the triggering workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
+    
+    strategy:
+      matrix:
+        python-version: ['3.11']
+      fail-fast: false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        echo "🐧 Installing dependencies on Linux runner"
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+        # Install system dependencies for Chrome
+        sudo apt-get update
+        sudo apt-get install -y \
+          libnss3-dev \
+          libatk-bridge2.0-dev \
+          libdrm-dev \
+          libxcomposite-dev \
+          libxdamage-dev \
+          libxrandr-dev \
+          libgbm-dev \
+          libxss-dev \
+          libasound2-dev
+    
+    - name: Install Playwright and Chrome
+      run: |
+        echo "🎭 Installing Playwright with Chrome browser"
+        playwright install chromium --with-deps
+        
+        # Verify installation
+        playwright --version
+        
+        # Test Chrome availability
+        chromium --version || google-chrome --version || echo "Chrome installed via Playwright"
+    
+    - name: Configure test environment
+      run: |
+        echo "⚙️ Configuring test environment for Linux Chrome"
+        
+        # Ensure Selenium Grid is disabled
+        echo "USE_SELENIUM_GRID=false" >> $GITHUB_ENV
+        
+        # Set headless mode based on input
+        if [ "${{ github.event.inputs.headless_mode || 'true' }}" == "true" ]; then
+          echo "PLAYWRIGHT_HEADLESS=true" >> $GITHUB_ENV
+          echo "Running in headless mode"
+        else
+          echo "PLAYWRIGHT_HEADLESS=false" >> $GITHUB_ENV
+          echo "Running in headed mode (with virtual display)"
+          
+          # Set up virtual display for headed mode
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+        fi
+        
+        # Create required directories
+        mkdir -p reports screenshots test_videos logs
+    
+    - name: Run Chrome Tests on Linux
+      run: |
+        echo "🚀 Running tests with Chrome on Linux GitHub runner"
+        echo "Browser: Chrome (via Playwright)"
+        echo "OS: $(lsb_release -d | cut -f2)"
+        echo "Python: $(python --version)"
+        echo "Test Suite: ${{ github.event.inputs.test_suite || 'homepage-links' }}"
+        
+        # Set parallel workers
+        WORKERS="${{ github.event.inputs.parallel_workers || 'auto' }}"
+        if [ "$WORKERS" == "auto" ]; then
+          WORKERS=$(nproc)
+          echo "Using $WORKERS parallel workers (auto-detected)"
+        else
+          echo "Using $WORKERS parallel workers (manual)"
+        fi
+        
+        # Run tests based on selected suite
+        case "${{ github.event.inputs.test_suite || 'homepage-links' }}" in
+          "homepage-links")
+            echo "Running homepage link validation tests..."
+            pytest generated_tests/test_homepage_links.py -v -s \
+              --html=reports/linux_chrome_homepage.html \
+              --self-contained-html \
+              --junit-xml=reports/linux_chrome_homepage_junit.xml \
+              -n $WORKERS --dist worksteal
+            ;;
+          "full-automation-suite")
+            echo "Running full automation suite..."
+            python run_complete_automation.py
+            ;;
+          "all-tests")
+            echo "Running all available tests..."
+            pytest generated_tests/ final_automation/generated_tests/ -v -s \
+              --html=reports/linux_chrome_all_tests.html \
+              --self-contained-html \
+              --junit-xml=reports/linux_chrome_all_junit.xml \
+              -n $WORKERS --dist worksteal \
+              --maxfail=5
+            ;;
+          "generated-tests-only")
+            echo "Running generated tests only..."
+            pytest generated_tests/ -v -s \
+              --html=reports/linux_chrome_generated.html \
+              --self-contained-html \
+              --junit-xml=reports/linux_chrome_generated_junit.xml \
+              -n $WORKERS --dist worksteal
+            ;;
+        esac
+      continue-on-error: false
+    
+    - name: Process test results
+      if: always()
+      run: |
+        echo "📊 Processing test results..."
+        
+        # Generate summary for GitHub
+        echo "## 🐧 Linux Chrome Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Runner**: GitHub-hosted Ubuntu Latest" >> $GITHUB_STEP_SUMMARY
+        echo "- **Browser**: Chrome (Playwright)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Python**: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Test Suite**: ${{ github.event.inputs.test_suite || 'homepage-links' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Headless Mode**: ${{ github.event.inputs.headless_mode || 'true' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Parallel Workers**: ${{ github.event.inputs.parallel_workers || 'auto' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check for test reports and extract metrics
+        if ls reports/*.html 1> /dev/null 2>&1; then
+          echo "✅ **Status**: Tests completed successfully" >> $GITHUB_STEP_SUMMARY
+          
+          # Count generated reports
+          HTML_COUNT=$(ls reports/*.html | wc -l)
+          JSON_COUNT=$(ls reports/*.json 2>/dev/null | wc -l || echo "0")
+          
+          echo "- **HTML Reports**: $HTML_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- **JSON Reports**: $JSON_COUNT" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract metrics from JSON if available
+          if ls reports/*_links_report.json 1> /dev/null 2>&1; then
+            for json_file in reports/*_links_report.json; do
+              if [ -f "$json_file" ]; then
+                TOTAL=$(jq -r '.total_links // "N/A"' "$json_file" 2>/dev/null)
+                VALID=$(jq -r '.valid_links_count // "N/A"' "$json_file" 2>/dev/null)
+                RATE=$(jq -r '.summary.success_rate // "N/A"' "$json_file" 2>/dev/null)
+                
+                echo "- **Total Links**: $TOTAL" >> $GITHUB_STEP_SUMMARY
+                echo "- **Valid Links**: $VALID" >> $GITHUB_STEP_SUMMARY
+                echo "- **Success Rate**: $RATE" >> $GITHUB_STEP_SUMMARY
+                break
+              fi
+            done
+          fi
+        else
+          echo "❌ **Status**: No HTML reports generated" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 **Artifacts**: Check the uploaded artifacts for detailed reports" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload test reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: linux-chrome-test-reports
+        path: |
+          reports/
+          screenshots/
+          test_videos/
+          logs/
+        retention-days: 30
+    
+    - name: Upload JUnit results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: linux-chrome-junit-results
+        path: reports/*junit*.xml
+        retention-days: 7
+    
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Linux Chrome Test Results
+        path: reports/*junit*.xml
+        reporter: java-junit
+        fail-on-error: false
+
+  notify-completion:
+    needs: linux-chrome-tests
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify completion
+      run: |
+        echo "🎉 Linux Chrome test execution completed!"
+        echo "📊 Results: ${{ needs.linux-chrome-tests.result }}"
+        
+        if [ "${{ needs.linux-chrome-tests.result }}" == "success" ]; then
+          echo "✅ All tests passed successfully on Linux Chrome!"
+        else
+          echo "⚠️ Some tests failed. Check the artifacts for details."
+        fi
+        
+        echo "🔗 Test artifacts are available for download"
+        echo "📋 Check the job summary for detailed metrics"

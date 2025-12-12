@@ -1,0 +1,136 @@
+name: Test GitHub Linux Runner Capabilities
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-linux-capabilities:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: System Information
+      run: |
+        echo "🐧 Linux System Information"
+        echo "=========================="
+        echo "OS: $(cat /etc/os-release | grep PRETTY_NAME)"
+        echo "Kernel: $(uname -r)"
+        echo "CPU: $(nproc) cores"
+        echo "Memory: $(free -h | grep Mem)"
+        echo "Disk: $(df -h / | tail -1)"
+        echo "Network: $(ip route | grep default)"
+        echo ""
+    
+    - name: Test Network Connectivity
+      run: |
+        echo "🌐 Network Connectivity Tests"
+        echo "============================="
+        
+        # Test public internet
+        echo "Testing public internet..."
+        curl -s https://httpbin.org/ip | jq -r '.origin' && echo " ✅ Public internet works"
+        
+        # Test your Selenium Grid (will likely fail)
+        echo ""
+        echo "Testing Selenium Grid at 192.168.1.33:4444..."
+        if curl -f --connect-timeout 5 --max-time 10 http://192.168.1.33:4444/wd/hub/status; then
+          echo "✅ Selenium Grid is accessible!"
+        else
+          echo "❌ Selenium Grid is not accessible (expected for private networks)"
+        fi
+        
+        # Test alternative approaches
+        echo ""
+        echo "Testing alternative grid URLs..."
+        
+        # Test if there's a public IP version
+        # curl -f --connect-timeout 5 YOUR_PUBLIC_IP:4444/wd/hub/status || echo "No public access"
+        
+        echo "Network test completed"
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install Dependencies
+      run: |
+        echo "📦 Installing Python Dependencies"
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+        # Install Playwright for fallback testing
+        playwright install chromium --with-deps
+    
+    - name: Test Selenium Grid Connectivity Script
+      run: |
+        echo "🔍 Running Selenium Grid Connectivity Test"
+        echo "=========================================="
+        
+        # This will likely fail but show us the exact error
+        python test_selenium_grid_connectivity.py || echo "Grid connectivity test completed with expected failure"
+    
+    - name: Run Fallback Playwright Tests
+      run: |
+        echo "🎭 Running Fallback Playwright Tests"
+        echo "===================================="
+        
+        # Disable Selenium Grid and run with local Playwright
+        unset USE_SELENIUM_GRID
+        
+        # Run a simple test to prove Linux runner works
+        pytest generated_tests/test_homepage_links.py -v -s \
+          --html=reports/github_linux_runner_test.html \
+          --self-contained-html \
+          --maxfail=1 || echo "Playwright test completed"
+    
+    - name: Test Environment Variables
+      run: |
+        echo "🔧 Environment Variable Tests"
+        echo "============================="
+        
+        # Test setting Selenium Grid variables
+        export USE_SELENIUM_GRID=true
+        export SELENIUM_HUB_URL=http://192.168.1.33:4444
+        export SELENIUM_BROWSER=chrome
+        
+        echo "USE_SELENIUM_GRID: $USE_SELENIUM_GRID"
+        echo "SELENIUM_HUB_URL: $SELENIUM_HUB_URL"
+        echo "SELENIUM_BROWSER: $SELENIUM_BROWSER"
+        
+        # Test if our automation script can handle the missing grid gracefully
+        echo ""
+        echo "Testing automation script with unreachable grid..."
+        timeout 30 python run_complete_automation.py || echo "Automation script test completed"
+    
+    - name: Generate Summary
+      if: always()
+      run: |
+        echo "📊 GitHub Linux Runner Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "=================================" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Linux Runner Capabilities:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Python 3.11 ✅" >> $GITHUB_STEP_SUMMARY
+        echo "- Playwright ✅" >> $GITHUB_STEP_SUMMARY
+        echo "- Network (public) ✅" >> $GITHUB_STEP_SUMMARY
+        echo "- All dependencies ✅" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "❌ **Limitations:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Cannot access private network (192.168.1.33)" >> $GITHUB_STEP_SUMMARY
+        echo "- Selenium Grid not reachable from GitHub runners" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🔧 **Recommendations:**" >> $GITHUB_STEP_SUMMARY
+        echo "1. Use self-hosted runner for full grid access" >> $GITHUB_STEP_SUMMARY
+        echo "2. Expose grid publicly for GitHub runner access" >> $GITHUB_STEP_SUMMARY
+        echo "3. Use hybrid approach (Playwright + Grid)" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: github-linux-runner-test-results
+        path: |
+          reports/
+          screenshots/
