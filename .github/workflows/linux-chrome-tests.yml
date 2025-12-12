@@ -70,16 +70,38 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
     
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
-        echo "🐧 Installing dependencies on Linux runner"
+        echo "🐧 Installing system dependencies on Linux runner"
+        sudo apt-get update
+        
+        # Install the actual libasound2 package (not virtual)
+        sudo apt-get install -y libasound2t64 libasound2-dev
+        
+        # Install other common dependencies for headless browsers
+        sudo apt-get install -y \
+          libatk-bridge2.0-0 \
+          libdrm2 \
+          libxkbcommon0 \
+          libxrandr2 \
+          libxss1 \
+          libgtk-3-0 \
+          libxshmfence1 \
+          libgbm1
+    
+    - name: Install Python dependencies
+      run: |
+        echo "🐍 Installing Python dependencies"
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        
-        # Install Playwright browsers and dependencies
-        echo "🎭 Installing Playwright browsers and system dependencies..."
+    
+    - name: Install Playwright browsers
+      run: |
+        echo "🎭 Installing Playwright browsers and dependencies..."
         playwright install chromium
-        playwright install-deps chromium
+        
+        # Install remaining deps (should work now with libasound2 fixed)
+        playwright install-deps chromium || echo "⚠️ Some deps failed but continuing..."
     
     - name: Verify Playwright setup
       run: |

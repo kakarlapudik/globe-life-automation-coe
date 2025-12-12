@@ -16,6 +16,25 @@ jobs:
       with:
         python-version: '3.11'
     
+    - name: Install system dependencies
+      run: |
+        echo "🐧 Installing system dependencies..."
+        sudo apt-get update
+        
+        # Install the actual libasound2 package (not virtual)
+        sudo apt-get install -y libasound2t64 libasound2-dev
+        
+        # Install other browser dependencies
+        sudo apt-get install -y \
+          libatk-bridge2.0-0 \
+          libdrm2 \
+          libxkbcommon0 \
+          libxrandr2 \
+          libxss1 \
+          libgtk-3-0 \
+          libxshmfence1 \
+          libgbm1
+    
     - name: Install dependencies and setup Chrome
       run: |
         echo "📦 Installing Python dependencies..."
@@ -24,7 +43,7 @@ jobs:
         
         echo "🎭 Installing Playwright browsers and dependencies..."
         playwright install chromium
-        playwright install-deps chromium
+        playwright install-deps chromium || echo "⚠️ Some deps failed but continuing..."
     
     - name: Verify Playwright setup
       run: |
