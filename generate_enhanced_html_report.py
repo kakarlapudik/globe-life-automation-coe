@@ -665,7 +665,7 @@ def generate_enhanced_html_report():
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
     
-    print(f"✅ Enhanced HTML report generated: {output_file}")
+    print(f"Enhanced HTML report generated: {output_file}")
     return output_file
 
 if __name__ == "__main__":

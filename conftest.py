@@ -175,15 +175,15 @@ def pytest_sessionfinish(session, exitstatus):
             )
             
             if result.returncode == 0:
-                print("[ENHANCED REPORT] ✅ Enhanced HTML report generated successfully")
-                print("[ENHANCED REPORT] 📄 Location: reports/enhanced_complete_automation_report.html")
+                print("[ENHANCED REPORT] Enhanced HTML report generated successfully")
+                print("[ENHANCED REPORT] Location: reports/enhanced_complete_automation_report.html")
             else:
-                print(f"[ENHANCED REPORT] ❌ Failed to generate enhanced report: {result.stderr}")
+                print(f"[ENHANCED REPORT] Failed to generate enhanced report: {result.stderr}")
         else:
-            print("[ENHANCED REPORT] ⚠️ No JSON reports found, skipping enhanced report generation")
+            print("[ENHANCED REPORT] No JSON reports found, skipping enhanced report generation")
             
     except Exception as e:
-        print(f"[ENHANCED REPORT] ❌ Error generating enhanced report: {e}")
+        print(f"[ENHANCED REPORT] Error generating enhanced report: {e}")
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)

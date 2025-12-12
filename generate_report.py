@@ -13,12 +13,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     from generate_enhanced_html_report import generate_enhanced_html_report
     
-    print("🚀 Generating Enhanced HTML Report...")
+    print("Generating Enhanced HTML Report...")
     output_file = generate_enhanced_html_report()
     
     if output_file and os.path.exists(output_file):
-        print(f"✅ Enhanced report generated successfully!")
-        print(f"📄 Report location: {output_file}")
+        print(f"Enhanced report generated successfully!")
+        print(f"Report location: {output_file}")
         
         # Optionally open the report
         if len(sys.argv) > 1 and sys.argv[1] == "--open":
@@ -27,16 +27,16 @@ try:
                     os.system(f"start {output_file}")
                 else:  # Linux/Mac
                     os.system(f"open {output_file}")
-                print("🌐 Opening report in browser...")
+                print("Opening report in browser...")
             except Exception as e:
-                print(f"⚠️ Could not open report automatically: {e}")
+                print(f"Could not open report automatically: {e}")
     else:
-        print("❌ Failed to generate enhanced report")
+        print("Failed to generate enhanced report")
         sys.exit(1)
         
 except ImportError as e:
-    print(f"❌ Error importing report generator: {e}")
+    print(f"Error importing report generator: {e}")
     sys.exit(1)
 except Exception as e:
-    print(f"❌ Error generating report: {e}")
+    print(f"Error generating report: {e}")
     sys.exit(1)
