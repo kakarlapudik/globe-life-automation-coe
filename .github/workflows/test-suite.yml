@@ -83,6 +83,25 @@ jobs:
     - name: Run verification setup
       run: python verify_setup.py
     
+    - name: Debug test discovery
+      run: |
+        echo "🔍 Debugging test discovery..."
+        echo "Current directory: $(pwd)"
+        echo "Directory contents:"
+        ls -la
+        
+        echo "Generated tests directory:"
+        ls -la generated_tests/ || echo "generated_tests directory not found"
+        
+        echo "Test files found:"
+        find . -name "test_*.py" -type f || echo "No test files found"
+        
+        echo "Pytest collection (dry run):"
+        pytest --collect-only generated_tests/ || echo "Pytest collection failed"
+        
+        echo "Pytest version and plugins:"
+        pytest --version
+    
     - name: Run test suite (parallel execution)
       run: |
         # Show Chrome path being used

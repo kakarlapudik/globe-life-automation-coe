@@ -272,10 +272,19 @@ except Exception as e:
           echo "Using $WORKERS parallel workers (manual)"
         fi
         
+        # Debug test discovery first
+        echo "🔍 Debugging test discovery..."
+        echo "Current directory: $(pwd)"
+        ls -la generated_tests/ || echo "generated_tests directory not found"
+        find . -name "test_*.py" -type f || echo "No test files found"
+        
         # Run tests based on selected suite
         case "${{ github.event.inputs.test_suite || 'homepage-links' }}" in
           "homepage-links")
             echo "Running homepage link validation tests..."
+            echo "Checking for test_homepage_links.py..."
+            ls -la generated_tests/test_homepage_links.py || echo "test_homepage_links.py not found"
+            
             pytest generated_tests/test_homepage_links.py -v -s \
               --html=reports/linux_chrome_homepage.html \
               --self-contained-html \
