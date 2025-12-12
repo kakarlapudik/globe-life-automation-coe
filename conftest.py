@@ -22,24 +22,16 @@ def browser_type_launch_args(browser_type_launch_args):
     chromium_path = None
     
     if platform.system() == "Windows":
-        # Windows paths for existing Chromium
-        possible_paths = [
-            # Playwright installed browsers
-            os.path.expanduser(r"~\AppData\Local\ms-playwright\chromium-*\chrome-win\chrome.exe"),
-            # System Chrome installations
+        # Windows - use only system Chrome installations (no Playwright cache)
+        system_chrome_paths = [
             r"C:\Program Files\Google\Chrome\Application\chrome.exe",
             r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
         ]
         
-        # Check glob patterns first
-        for pattern in possible_paths:
-            if "*" in pattern:
-                matches = glob.glob(pattern)
-                if matches:
-                    chromium_path = matches[0]  # Use first match
-                    break
-            elif os.path.exists(pattern):
-                chromium_path = pattern
+        # Check system Chrome installations only
+        for chrome_path in system_chrome_paths:
+            if os.path.exists(chrome_path):
+                chromium_path = chrome_path
                 break
     else:
         # Linux - check system binaries first, then Playwright
