@@ -122,19 +122,29 @@ with sync_playwright() as p:
         # Debug test discovery
         echo "🔍 Debugging test discovery..."
         echo "Current directory: $(pwd)"
-        ls -la generated_tests/ || echo "generated_tests directory not found"
-        echo "Looking for test_homepage_links.py:"
-        ls -la generated_tests/test_homepage_links.py || echo "test_homepage_links.py not found"
         
-        # Show all test files
-        find . -name "test_*.py" -type f || echo "No test files found"
-        
-        # Run a simple test
-        pytest generated_tests/test_homepage_links.py -v -s \
-          --html=reports/simple_chrome_test.html \
-          --self-contained-html \
-          --maxfail=3 \
-          -x
+        # Check final_automation/generated_tests directory
+        if [ -d "final_automation/generated_tests" ]; then
+          echo "✅ final_automation/generated_tests directory found"
+          ls -la final_automation/generated_tests/
+          
+          # Show test files in final_automation/generated_tests
+          echo "Test files in final_automation/generated_tests:"
+          find final_automation/generated_tests -name "test_*.py" -type f || echo "No test files found"
+          
+          # Run tests from final_automation/generated_tests
+          echo "Running tests from final_automation/generated_tests..."
+          pytest final_automation/generated_tests/ -v -s \
+            --html=reports/simple_chrome_test.html \
+            --self-contained-html \
+            --maxfail=3 \
+            -x
+        else
+          echo "❌ final_automation/generated_tests directory not found"
+          echo "Available directories:"
+          find . -type d -name "*automation*" -o -name "*test*" | head -5
+          exit 1
+        fi
     
     - name: Check results
       if: always()
