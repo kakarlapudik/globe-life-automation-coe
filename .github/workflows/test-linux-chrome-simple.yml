@@ -51,11 +51,26 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
         
-        # Verify Chrome installation
+        # Verify Chrome installation and show detailed location info
+        echo "🔍 Chrome installation details:"
         google-chrome --version
+        
         CHROME_PATH=$(which google-chrome)
-        echo "Chrome installed at: $CHROME_PATH"
-        echo "CHROME_EXECUTABLE_PATH=$CHROME_PATH" >> $GITHUB_ENV
+        echo "📍 Chrome executable path: $CHROME_PATH"
+        echo "📁 Chrome directory listing:"
+        ls -la $(dirname $CHROME_PATH)
+        
+        # Check if it's a symlink
+        if [ -L "$CHROME_PATH" ]; then
+          REAL_PATH=$(readlink -f $CHROME_PATH)
+          echo "🔗 Chrome symlink points to: $REAL_PATH"
+          echo "📁 Real Chrome directory:"
+          ls -la $(dirname $REAL_PATH)
+        fi
+        
+        # Set environment variable
+        echo "PLAYWRIGHT_CHROME_EXECUTABLE=$CHROME_PATH" >> $GITHUB_ENV
+        echo "✅ Chrome path set in environment: $CHROME_PATH"
     
     - name: Setup Playwright for Chrome
       run: |
@@ -74,7 +89,7 @@ jobs:
 import os
 from playwright.sync_api import sync_playwright
 
-chrome_path = os.environ.get('CHROME_EXECUTABLE_PATH', '/usr/bin/google-chrome')
+chrome_path = os.environ.get('PLAYWRIGHT_CHROME_EXECUTABLE', '/usr/bin/google-chrome')
 print(f'Using Chrome at: {chrome_path}')
 
 with sync_playwright() as p:

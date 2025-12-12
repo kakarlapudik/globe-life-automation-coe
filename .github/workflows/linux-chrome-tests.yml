@@ -140,11 +140,37 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
         
-        # Verify Chrome installation
+        # Verify Chrome installation and show detailed location info
+        echo "🔍 Chrome installation details:"
         google-chrome --version
+        
         CHROME_PATH=$(which google-chrome)
-        echo "Chrome installed at: $CHROME_PATH"
-        echo "CHROME_EXECUTABLE_PATH=$CHROME_PATH" >> $GITHUB_ENV
+        echo "📍 Chrome executable path: $CHROME_PATH"
+        echo "📁 Chrome directory listing:"
+        ls -la $(dirname $CHROME_PATH)
+        
+        # Check if it's a symlink
+        if [ -L "$CHROME_PATH" ]; then
+          REAL_PATH=$(readlink -f $CHROME_PATH)
+          echo "🔗 Chrome symlink points to: $REAL_PATH"
+          echo "📁 Real Chrome directory:"
+          ls -la $(dirname $REAL_PATH)
+        fi
+        
+        # Set environment variable
+        echo "PLAYWRIGHT_CHROME_EXECUTABLE=$CHROME_PATH" >> $GITHUB_ENV
+        echo "✅ Chrome path set in environment: $CHROME_PATH"
+        
+        # Show additional Chrome information
+        echo "🔍 Additional Chrome information:"
+        echo "📦 Chrome package info:"
+        dpkg -l | grep -i chrome || echo "No Chrome packages found via dpkg"
+        
+        echo "🔍 All Chrome-related files in /usr/bin:"
+        ls -la /usr/bin/*chrome* 2>/dev/null || echo "No chrome files in /usr/bin"
+        
+        echo "🔍 All Chrome-related files in /opt:"
+        ls -la /opt/*chrome* 2>/dev/null || echo "No chrome files in /opt"
     
     - name: Install Playwright (without browsers)
       run: |
@@ -208,10 +234,10 @@ except Exception as e:
         # Ensure Selenium Grid is disabled
         echo "USE_SELENIUM_GRID=false" >> $GITHUB_ENV
         
-        # Set Chrome executable path for Playwright
+        # Set Chrome executable path for Playwright (already set in previous step)
         CHROME_PATH=$(which google-chrome)
-        echo "PLAYWRIGHT_CHROME_EXECUTABLE=$CHROME_PATH" >> $GITHUB_ENV
         echo "Using Chrome at: $CHROME_PATH"
+        echo "Environment variable PLAYWRIGHT_CHROME_EXECUTABLE is set to: $PLAYWRIGHT_CHROME_EXECUTABLE"
         
         # Set headless mode based on input
         if [ "${{ github.event.inputs.headless_mode || 'true' }}" == "true" ]; then
