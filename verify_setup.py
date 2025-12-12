@@ -1,26 +1,58 @@
 """
-Verify Playwright setup with existing Chromium browser
+Verify Playwright setup with Chrome/Chromium browser
 """
 
 import os
 import sys
+import platform
+import shutil
 
 
-def verify_chromium():
-    """Verify existing Chromium installation"""
-    chromium_path = os.path.expanduser(
-        r"~\AppData\Local\ms-playwright\chromium-1155\chrome-win\chrome.exe"
-    )
+def verify_browser():
+    """Verify Chrome/Chromium installation"""
+    print("🔍 Checking browser installation...")
     
-    print("🔍 Checking Chromium installation...")
-    print(f"   Path: {chromium_path}")
+    # Check for environment variable first (GitHub Actions Linux)
+    chrome_path = os.environ.get("PLAYWRIGHT_CHROME_EXECUTABLE")
+    if chrome_path and os.path.exists(chrome_path):
+        print(f"   ✅ Using Chrome from environment: {chrome_path}")
+        return True, chrome_path
     
-    if os.path.exists(chromium_path):
-        print("   ✅ Chromium found!")
-        return True
+    if platform.system() == "Windows":
+        # Windows paths
+        windows_paths = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            os.path.expanduser(r"~\AppData\Local\ms-playwright\chromium-1155\chrome-win\chrome.exe"),
+        ]
+        
+        for path in windows_paths:
+            if os.path.exists(path):
+                print(f"   ✅ Found browser at: {path}")
+                return True, path
+                
     else:
-        print("   ❌ Chromium not found at expected location")
-        return False
+        # Linux/Mac - check system binaries
+        for binary in ["google-chrome", "chromium-browser", "chromium"]:
+            path = shutil.which(binary)
+            if path:
+                print(f"   ✅ Found {binary} at: {path}")
+                return True, path
+        
+        # Check Playwright cache as fallback
+        playwright_patterns = [
+            os.path.expanduser("~/.cache/ms-playwright/chromium-*/chrome-linux/chrome"),
+        ]
+        import glob
+        for pattern in playwright_patterns:
+            matches = glob.glob(pattern)
+            if matches:
+                path = matches[0]
+                print(f"   ✅ Found Playwright Chromium at: {path}")
+                return True, path
+    
+    print("   ❌ No browser found")
+    return False, None
 
 
 def verify_dependencies():
@@ -46,24 +78,37 @@ def verify_dependencies():
     return len(missing) == 0
 
 
-def test_playwright():
-    """Test Playwright with existing Chromium"""
-    print("\n🧪 Testing Playwright with existing Chromium...")
+def test_playwright(browser_path=None):
+    """Test Playwright with Chrome/Chromium"""
+    print("\n🧪 Testing Playwright with browser...")
     
     try:
         from playwright.sync_api import sync_playwright
         
-        chromium_path = os.path.expanduser(
-            r"~\AppData\Local\ms-playwright\chromium-1155\chrome-win\chrome.exe"
-        )
+        # Determine headless mode (default to True for CI environments)
+        headless = os.environ.get("PLAYWRIGHT_HEADLESS", "true").lower() == "true"
+        
+        launch_args = {"headless": headless}
+        
+        # Set executable path if provided
+        if browser_path:
+            launch_args["executable_path"] = browser_path
+            print(f"   Using browser: {browser_path}")
+        else:
+            print("   Using default Playwright browser")
+        
+        # Add Linux-specific args for stability
+        if platform.system() == "Linux":
+            launch_args["args"] = [
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+            ]
         
         with sync_playwright() as p:
-            browser = p.chromium.launch(
-                executable_path=chromium_path,
-                headless=False
-            )
+            browser = p.chromium.launch(**launch_args)
             page = browser.new_page()
-            page.goto("https://example.com")
+            page.goto("https://example.com", timeout=10000)
             title = page.title()
             print(f"   ✅ Successfully opened page: {title}")
             browser.close()
@@ -80,17 +125,22 @@ def main():
     print("Playwright Setup Verification")
     print("="*60)
     
-    chromium_ok = verify_chromium()
+    # Show environment info
+    print(f"Platform: {platform.system()}")
+    if os.environ.get("GITHUB_ACTIONS"):
+        print("Environment: GitHub Actions")
+    
+    browser_ok, browser_path = verify_browser()
     deps_ok = verify_dependencies()
     
-    if chromium_ok and deps_ok:
-        playwright_ok = test_playwright()
+    if browser_ok and deps_ok:
+        playwright_ok = test_playwright(browser_path)
         
         print("\n" + "="*60)
         if playwright_ok:
             print("✅ Setup verified! Ready to run tests.")
             print("\nRun tests with:")
-            print("  python generated_tests/run_tests.py quick")
+            print("  pytest generated_tests/ -v")
         else:
             print("❌ Playwright test failed")
         print("="*60)
@@ -102,6 +152,13 @@ def main():
         if not deps_ok:
             print("\nInstall missing dependencies:")
             print("  pip install pytest playwright pytest-html requests")
+        if not browser_ok:
+            if platform.system() == "Linux":
+                print("\nFor Linux, install Chrome or run:")
+                print("  playwright install chromium")
+            else:
+                print("\nInstall Chrome or run:")
+                print("  playwright install chromium")
         print("="*60)
         return 1
 
