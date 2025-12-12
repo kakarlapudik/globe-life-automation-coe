@@ -39,9 +39,15 @@ reports/
 logs/
 screenshots/
 test_videos/
-generated_tests/
 output/
 test_automation_report.json
+
+# Keep generated_tests directory but ignore its output files
+generated_tests/reports/
+generated_tests/logs/
+generated_tests/screenshots/
+generated_tests/test_videos/
+generated_tests/__pycache__/
 
 # IDE
 .vscode/

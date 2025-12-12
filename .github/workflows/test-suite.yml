@@ -90,24 +90,50 @@ jobs:
         echo "Directory contents:"
         ls -la
         
-        echo "Generated tests directory:"
-        ls -la generated_tests/ || echo "generated_tests directory not found"
-        
-        echo "Test files found:"
+        echo "Looking for test directories and files:"
+        find . -type d -name "*test*" || echo "No test directories found"
         find . -name "test_*.py" -type f || echo "No test files found"
         
-        echo "Pytest collection (dry run):"
-        pytest --collect-only generated_tests/ || echo "Pytest collection failed"
+        echo "Checking if generated_tests exists:"
+        if [ -d "generated_tests" ]; then
+          echo "✅ generated_tests directory exists"
+          ls -la generated_tests/
+        else
+          echo "❌ generated_tests directory not found"
+          echo "Available directories:"
+          ls -la | grep "^d"
+        fi
         
         echo "Pytest version and plugins:"
         pytest --version
+        
+        # Try to collect tests from any available test directory
+        echo "Pytest collection attempt:"
+        if [ -d "generated_tests" ]; then
+          pytest --collect-only generated_tests/ || echo "Pytest collection from generated_tests failed"
+        else
+          echo "Trying to collect from current directory:"
+          pytest --collect-only . || echo "Pytest collection from current directory failed"
+        fi
     
     - name: Run test suite (parallel execution)
       run: |
         # Show Chrome path being used
         echo "Using Chrome at: $PLAYWRIGHT_CHROME_EXECUTABLE"
         
-        pytest generated_tests/ -v --html=reports/test_report.html --self-contained-html -n auto --dist worksteal --junit-xml=reports/junit.xml
+        # Find and run tests from available locations
+        if [ -d "generated_tests" ] && [ -n "$(find generated_tests -name 'test_*.py' -type f)" ]; then
+          echo "Running tests from generated_tests directory"
+          pytest generated_tests/ -v --html=reports/test_report.html --self-contained-html -n auto --dist worksteal --junit-xml=reports/junit.xml
+        elif [ -n "$(find . -maxdepth 1 -name 'test_*.py' -type f)" ]; then
+          echo "Running tests from current directory"
+          pytest test_*.py -v --html=reports/test_report.html --self-contained-html -n auto --dist worksteal --junit-xml=reports/junit.xml
+        else
+          echo "❌ No test files found in any location"
+          echo "Available Python files:"
+          find . -name "*.py" -type f | head -10
+          exit 1
+        fi
       env:
         # Disable SSL verification for corporate environments
         PYTHONHTTPSVERIFY: 0

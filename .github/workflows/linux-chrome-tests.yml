@@ -282,10 +282,22 @@ except Exception as e:
         case "${{ github.event.inputs.test_suite || 'homepage-links' }}" in
           "homepage-links")
             echo "Running homepage link validation tests..."
-            echo "Checking for test_homepage_links.py..."
-            ls -la generated_tests/test_homepage_links.py || echo "test_homepage_links.py not found"
+            echo "Looking for homepage test file..."
             
-            pytest generated_tests/test_homepage_links.py -v -s \
+            # Find the homepage test file
+            if [ -f "generated_tests/test_homepage_links.py" ]; then
+              TEST_FILE="generated_tests/test_homepage_links.py"
+            elif [ -f "test_homepage_links.py" ]; then
+              TEST_FILE="test_homepage_links.py"
+            else
+              echo "❌ test_homepage_links.py not found in any location"
+              echo "Available test files:"
+              find . -name "test_*.py" -type f
+              exit 1
+            fi
+            
+            echo "Running test: $TEST_FILE"
+            pytest $TEST_FILE -v -s \
               --html=reports/linux_chrome_homepage.html \
               --self-contained-html \
               --junit-xml=reports/linux_chrome_homepage_junit.xml \

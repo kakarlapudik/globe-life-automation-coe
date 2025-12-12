@@ -123,18 +123,30 @@ with sync_playwright() as p:
         echo "🔍 Debugging test discovery..."
         echo "Current directory: $(pwd)"
         ls -la generated_tests/ || echo "generated_tests directory not found"
-        echo "Looking for test_homepage_links.py:"
-        ls -la generated_tests/test_homepage_links.py || echo "test_homepage_links.py not found"
-        
         # Show all test files
         find . -name "test_*.py" -type f || echo "No test files found"
         
-        # Run a simple test
-        pytest generated_tests/test_homepage_links.py -v -s \
-          --html=reports/simple_chrome_test.html \
-          --self-contained-html \
-          --maxfail=3 \
-          -x
+        # Find and run homepage test
+        if [ -f "generated_tests/test_homepage_links.py" ]; then
+          TEST_FILE="generated_tests/test_homepage_links.py"
+        elif [ -f "test_homepage_links.py" ]; then
+          TEST_FILE="test_homepage_links.py"
+        else
+          echo "❌ test_homepage_links.py not found, running any available test"
+          TEST_FILE=$(find . -name "test_*.py" -type f | head -1)
+        fi
+        
+        if [ -n "$TEST_FILE" ]; then
+          echo "Running test: $TEST_FILE"
+          pytest $TEST_FILE -v -s \
+            --html=reports/simple_chrome_test.html \
+            --self-contained-html \
+            --maxfail=3 \
+            -x
+        else
+          echo "❌ No test files found to run"
+          exit 1
+        fi
     
     - name: Check results
       if: always()
