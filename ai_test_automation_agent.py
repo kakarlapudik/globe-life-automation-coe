@@ -467,7 +467,7 @@ class Test{test_case.id}:
             const buttons = document.querySelectorAll('.filter-btn');
             
             buttons.forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`[onclick="filterTable('${{status}}')"]`).classList.add('active');
+            document.querySelector('[onclick="filterTable(\\''+status+'\\')"]').classList.add('active');
             
             rows.forEach(row => {{
                 if (status === 'all') {{
