@@ -86,8 +86,7 @@ jobs:
         
         # Test Chrome can start with Playwright
         python -c "
-import os
-from playwright.sync_api import sync_playwright
+import os from playwright.sync_api import sync_playwright
 
 chrome_path = os.environ.get('PLAYWRIGHT_CHROME_EXECUTABLE', '/usr/bin/google-chrome')
 print(f'Using Chrome at: {chrome_path}')
